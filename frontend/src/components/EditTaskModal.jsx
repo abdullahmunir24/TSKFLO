@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  FaTimes,
   FaCalendarAlt,
   FaExclamationCircle,
   FaSpinner,
@@ -8,6 +7,7 @@ import {
   FaUser,
   FaSearch,
   FaPlus,
+  FaTimes,
 } from "react-icons/fa";
 import {
   useUpdateTaskMutation,
@@ -17,9 +17,12 @@ import {
 import { useSearchUsersQuery } from "../features/user/userApiSlice";
 import { useSelector } from "react-redux";
 import { selectCurrentUserId } from "../features/auth/authSlice";
-
-// Maximum description length as defined by the backend
-const MAX_DESCRIPTION_LENGTH = 500;
+import { 
+  validateTaskForm, 
+  MAX_DESCRIPTION_LENGTH,
+  getCharacterCountColor
+} from "../utils/formValidation";
+import Modal from "./Modal";
 
 const EditTaskModal = ({ task, isOpen, onClose, onSuccess }) => {
   const userId = useSelector(selectCurrentUserId);
@@ -34,6 +37,9 @@ const EditTaskModal = ({ task, isOpen, onClose, onSuccess }) => {
     priority: "medium",
     status: "Incomplete",
   });
+
+  // Form validation errors
+  const [formErrors, setFormErrors] = useState({});
 
   // Add state to track original task data for comparison
   const [originalTaskData, setOriginalTaskData] = useState({});
@@ -106,6 +112,11 @@ const EditTaskModal = ({ task, isOpen, onClose, onSuccess }) => {
     }
 
     setTaskData({ ...taskData, [name]: value });
+    
+    // Clear error for this field if it exists
+    if (formErrors[name]) {
+      setFormErrors(prev => ({ ...prev, [name]: "" }));
+    }
   };
 
   // Function to handle removing assignees
@@ -182,10 +193,11 @@ const EditTaskModal = ({ task, isOpen, onClose, onSuccess }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (taskData.description.length > MAX_DESCRIPTION_LENGTH) {
-      setErrorMessage(
-        `Description must be ${MAX_DESCRIPTION_LENGTH} characters or less.`
-      );
+    // Validate form using shared utility
+    const errors = validateTaskForm(taskData);
+    setFormErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      setErrorMessage("Please fix the form errors before submitting.");
       return;
     }
 
@@ -251,336 +263,351 @@ const EditTaskModal = ({ task, isOpen, onClose, onSuccess }) => {
     }
   };
 
-  if (!isOpen || !task) return null;
+  // Prepare footer content for the modal
+  const modalFooter = (
+    <div className="flex justify-end gap-3">
+      <button
+        type="button"
+        onClick={onClose}
+        className="px-4 py-2 bg-secondary-100 dark:bg-secondary-800 hover:bg-secondary-200 dark:hover:bg-secondary-700 text-secondary-700 dark:text-secondary-300 rounded-lg font-medium transition-all"
+      >
+        Cancel
+      </button>
+      <button
+        type="submit"
+        form="editTaskForm" // Connect to the form by id
+        disabled={isUpdating || isAddingAssignee || isRemovingAssignee}
+        className="px-6 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium shadow-sm hover:shadow-lg transition-all hover:-translate-y-1 flex items-center"
+      >
+        {isUpdating ? (
+          <>
+            <FaSpinner className="animate-spin mr-2" />
+            Saving...
+          </>
+        ) : (
+          <>
+            <FaSave className="mr-2" />
+            Save Changes
+          </>
+        )}
+      </button>
+    </div>
+  );
 
-  const descriptionCharsLeft =
-    MAX_DESCRIPTION_LENGTH - taskData.description.length;
+  if (!task) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto animate-fade-in">
-      <div className="bg-white dark:bg-secondary-800 rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-scale-in">
-        <div className="p-6">
-          <div className="flex justify-between items-start mb-4">
-            <h2 className="text-2xl font-bold text-secondary-900 dark:text-white flex items-center">
-              <span className="bg-gradient-to-r from-primary-500 to-primary-700 bg-clip-text text-transparent">
-                Edit Task
-              </span>
-            </h2>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-full hover:bg-secondary-100 dark:hover:bg-secondary-700 text-secondary-500 dark:text-secondary-400 transition-colors"
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Edit Task"
+      footer={modalFooter}
+      size="lg"
+    >
+      {/* Notifications */}
+      {errorMessage && (
+        <div className="bg-danger-50 dark:bg-danger-900/20 text-danger-700 dark:text-danger-300 p-3 rounded-lg text-sm mb-4 animate-pulse">
+          <FaExclamationCircle className="inline mr-2" />
+          {errorMessage}
+        </div>
+      )}
+
+      {notification && notification.type === "success" && (
+        <div className="bg-success-50 dark:bg-success-900/20 text-success-700 dark:text-success-300 p-3 rounded-lg text-sm mb-4 animate-pulse">
+          {notification.message}
+        </div>
+      )}
+
+      {/* Form */}
+      <form id="editTaskForm" onSubmit={handleSubmit} className="space-y-5">
+        <div>
+          <label
+            htmlFor="title"
+            className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1"
+          >
+            Task Title <span className="text-danger-500">*</span>
+          </label>
+          <input
+            type="text"
+            id="title"
+            name="title"
+            value={taskData.title}
+            onChange={handleChange}
+            required
+            className={`w-full px-4 py-2.5 bg-white dark:bg-secondary-800 border ${
+              formErrors.title 
+                ? "border-danger-300 dark:border-danger-700 focus:ring-danger-500 focus:border-danger-500" 
+                : "border-secondary-300 dark:border-secondary-700 focus:ring-primary-500 focus:border-primary-500"
+            } rounded-lg text-secondary-900 dark:text-white transition-all`}
+            placeholder="Enter task title..."
+          />
+          {formErrors.title && (
+            <p className="mt-1 text-sm text-danger-600 dark:text-danger-400">
+              {formErrors.title}
+            </p>
+          )}
+        </div>
+
+        <div>
+          <div className="flex justify-between items-center mb-1">
+            <label
+              htmlFor="description"
+              className="block text-sm font-medium text-secondary-700 dark:text-secondary-300"
             >
-              <FaTimes />
-            </button>
+              Description
+            </label>
+            <span
+              className={`text-xs ${getCharacterCountColor(
+                taskData.description.length,
+                MAX_DESCRIPTION_LENGTH
+              )}`}
+            >
+              {taskData.description.length}/{MAX_DESCRIPTION_LENGTH}
+            </span>
+          </div>
+          <textarea
+            id="description"
+            name="description"
+            rows={4}
+            value={taskData.description}
+            onChange={handleChange}
+            className={`w-full px-4 py-2.5 bg-white dark:bg-secondary-800 border ${
+              formErrors.description
+                ? "border-danger-300 dark:border-danger-700 focus:ring-danger-500 focus:border-danger-500" 
+                : "border-secondary-300 dark:border-secondary-700 focus:ring-primary-500 focus:border-primary-500"
+            } rounded-lg text-secondary-900 dark:text-white transition-all resize-none`}
+            placeholder="Enter task description..."
+          />
+          {formErrors.description && (
+            <p className="mt-1 text-sm text-danger-600 dark:text-danger-400">
+              {formErrors.description}
+            </p>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div>
+            <label
+              htmlFor="dueDate"
+              className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1"
+            >
+              Due Date
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <FaCalendarAlt className="text-secondary-400 dark:text-secondary-500" />
+              </div>
+              <input
+                type="date"
+                id="dueDate"
+                name="dueDate"
+                value={taskData.dueDate}
+                onChange={handleChange}
+                className={`w-full pl-10 pr-4 py-2.5 bg-white dark:bg-secondary-800 border ${
+                  formErrors.dueDate 
+                    ? "border-danger-300 dark:border-danger-700 focus:ring-danger-500 focus:border-danger-500" 
+                    : "border-secondary-300 dark:border-secondary-700 focus:ring-primary-500 focus:border-primary-500"
+                } rounded-lg text-secondary-900 dark:text-white transition-all`}
+              />
+            </div>
+            {formErrors.dueDate && (
+              <p className="mt-1 text-sm text-danger-600 dark:text-danger-400">
+                {formErrors.dueDate}
+              </p>
+            )}
           </div>
 
-          {/* Error Notification */}
-          {errorMessage && (
-            <div className="bg-danger-50 dark:bg-danger-900/20 text-danger-700 dark:text-danger-300 p-3 rounded-lg text-sm mb-4 animate-pulse">
-              <FaExclamationCircle className="inline mr-2" />
-              {errorMessage}
-            </div>
-          )}
+          <div>
+            <label
+              htmlFor="priority"
+              className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1"
+            >
+              Priority
+            </label>
+            <select
+              id="priority"
+              name="priority"
+              value={taskData.priority}
+              onChange={handleChange}
+              className="w-full px-4 py-2.5 bg-white dark:bg-secondary-800 border border-secondary-300 dark:border-secondary-700 rounded-lg text-secondary-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+            >
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
 
-          {/* Success Notification */}
-          {notification && notification.type === "success" && (
-            <div className="bg-success-50 dark:bg-success-900/20 text-success-700 dark:text-success-300 p-3 rounded-lg text-sm mb-4 animate-pulse">
-              {notification.message}
-            </div>
-          )}
+          <div>
+            <label
+              htmlFor="status"
+              className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1"
+            >
+              Status
+            </label>
+            <select
+              id="status"
+              name="status"
+              value={taskData.status}
+              onChange={handleChange}
+              className="w-full px-4 py-2.5 bg-white dark:bg-secondary-800 border border-secondary-300 dark:border-secondary-700 rounded-lg text-secondary-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+            >
+              <option value="Incomplete">To Do</option>
+              <option value="Complete">Done</option>
+            </select>
+          </div>
+        </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label
-                htmlFor="title"
-                className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1"
-              >
-                Task Title <span className="text-danger-500">*</span>
-              </label>
-              <input
-                type="text"
-                id="title"
-                name="title"
-                value={taskData.title}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-2.5 bg-white dark:bg-secondary-800 border border-secondary-300 dark:border-secondary-700 rounded-lg text-secondary-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
-                placeholder="Enter task title..."
-              />
-            </div>
+        {/* Owner Information */}
+        <div className="mb-2">
+          <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
+            Owner
+          </label>
+          <div className="flex items-center gap-2 py-2 px-3 bg-secondary-50 dark:bg-secondary-800 rounded-lg">
+            <FaUser className="text-primary-500 dark:text-primary-400" />
+            <span className="text-secondary-800 dark:text-secondary-200">
+              {task.owner ? task.owner.name : "Unknown"}
+            </span>
+          </div>
+        </div>
 
-            <div>
-              <label
-                htmlFor="description"
-                className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1"
-              >
-                Description
-              </label>
-              <textarea
-                id="description"
-                name="description"
-                rows={4}
-                value={taskData.description}
-                onChange={handleChange}
-                className="w-full px-4 py-2.5 bg-white dark:bg-secondary-800 border border-secondary-300 dark:border-secondary-700 rounded-lg text-secondary-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all resize-none"
-                placeholder="Enter task description..."
-              />
-              <div className="flex justify-end mt-1">
-                <span
-                  className={`text-xs ${
-                    descriptionCharsLeft < 50
-                      ? "text-danger-500"
-                      : "text-secondary-500 dark:text-secondary-400"
-                  }`}
+        {/* Assignees Information */}
+        <div className="mb-4">
+          <div className="flex justify-between items-center mb-1">
+            <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300">
+              Assignees
+            </label>
+          </div>
+
+          {/* Current assignees */}
+          {selectedAssignees && selectedAssignees.length > 0 ? (
+            <div className="flex flex-wrap gap-2 mb-3">
+              {selectedAssignees.map((assignee) => (
+                <div
+                  key={assignee._id}
+                  className="flex items-center gap-1 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 py-1 px-2 rounded-lg text-sm"
                 >
-                  {descriptionCharsLeft} characters remaining
-                </span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              <div>
-                <label
-                  htmlFor="dueDate"
-                  className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1"
-                >
-                  Due Date
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FaCalendarAlt className="text-secondary-400 dark:text-secondary-500" />
-                  </div>
-                  <input
-                    type="date"
-                    id="dueDate"
-                    name="dueDate"
-                    value={taskData.dueDate}
-                    onChange={handleChange}
-                    className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-secondary-800 border border-secondary-300 dark:border-secondary-700 rounded-lg text-secondary-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="priority"
-                  className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1"
-                >
-                  Priority
-                </label>
-                <select
-                  id="priority"
-                  name="priority"
-                  value={taskData.priority}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2.5 bg-white dark:bg-secondary-800 border border-secondary-300 dark:border-secondary-700 rounded-lg text-secondary-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
-                >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                </select>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="status"
-                  className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1"
-                >
-                  Status
-                </label>
-                <select
-                  id="status"
-                  name="status"
-                  value={taskData.status}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2.5 bg-white dark:bg-secondary-800 border border-secondary-300 dark:border-secondary-700 rounded-lg text-secondary-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
-                >
-                  <option value="Incomplete">To Do</option>
-                  <option value="Complete">Done</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Owner Information */}
-            <div className="mb-2">
-              <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
-                Owner
-              </label>
-              <div className="flex items-center gap-2 py-2 px-3 bg-secondary-50 dark:bg-secondary-800 rounded-lg">
-                <FaUser className="text-primary-500 dark:text-primary-400" />
-                <span className="text-secondary-800 dark:text-secondary-200">
-                  {task.owner ? task.owner.name : "Unknown"}
-                </span>
-              </div>
-            </div>
-
-            {/* Assignees Information */}
-            <div className="mb-4">
-              <div className="flex justify-between items-center mb-1">
-                <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300">
-                  Assignees
-                </label>
-              </div>
-
-              {/* Current assignees */}
-              {selectedAssignees && selectedAssignees.length > 0 ? (
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {selectedAssignees.map((assignee) => (
-                    <div
-                      key={assignee._id}
-                      className="flex items-center gap-1 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 py-1 px-2 rounded-lg text-sm"
+                  <FaUser className="text-xs" />
+                  <span>{assignee.name}</span>
+                  {isOwner && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveAssignee(assignee._id)}
+                      className="ml-1.5 text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-200"
+                      disabled={isRemovingAssignee}
                     >
-                      <FaUser className="text-xs" />
-                      <span>{assignee.name}</span>
-                      {isOwner && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveAssignee(assignee._id)}
-                          className="ml-1.5 text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-200"
-                          disabled={isRemovingAssignee}
-                        >
-                          <FaTimes size={12} />
-                        </button>
-                      )}
-                    </div>
-                  ))}
+                      <FaTimes size={12} />
+                    </button>
+                  )}
                 </div>
-              ) : (
-                <p className="text-sm text-secondary-500 dark:text-secondary-400 mb-3">
-                  No assignees
-                </p>
-              )}
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-secondary-500 dark:text-secondary-400 mb-3">
+              No assignees
+            </p>
+          )}
 
-              {/* Search users input for owners only */}
-              {isOwner && (
-                <div className="mt-2">
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <FaSearch className="text-secondary-400 dark:text-secondary-600" />
-                    </div>
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => {
-                        setSearchQuery(e.target.value);
-                        if (e.target.value.length >= 2) {
-                          setShowDropdown(true);
-                        } else {
-                          setShowDropdown(false);
-                        }
-                      }}
-                      placeholder="Search for users to assign"
-                      className="w-full pl-10 pr-4 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-secondary-800 text-secondary-900 dark:text-white"
-                    />
-                    {/* Search results dropdown - Fixed positioning */}
-                    {showDropdown &&
-                      debouncedQuery &&
-                      debouncedQuery.length >= 2 && (
-                        <div className="absolute z-50 w-full bg-white dark:bg-secondary-800 rounded-lg shadow-lg border border-secondary-200 dark:border-secondary-700 max-h-60 overflow-y-auto top-full left-0 mt-1">
-                          {isSearching ? (
-                            <div className="p-3 text-center text-secondary-600 dark:text-secondary-400">
-                              <FaSpinner className="animate-spin inline mr-2" />
-                              Searching users...
-                            </div>
-                          ) : searchResults.users &&
-                            searchResults.users.length > 0 ? (
-                            <ul className="py-1">
-                              {searchResults.users
-                                .filter(
-                                  (user) =>
-                                    !selectedAssignees.some(
-                                      (a) => a._id === user._id
-                                    )
+          {/* Search users input for owners only */}
+          {isOwner && (
+            <div className="mt-2">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FaSearch className="text-secondary-400 dark:text-secondary-600" />
+                </div>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    if (e.target.value.length >= 2) {
+                      setShowDropdown(true);
+                    } else {
+                      setShowDropdown(false);
+                    }
+                  }}
+                  placeholder="Search for users to assign"
+                  className="w-full pl-10 pr-4 py-2 text-sm border border-secondary-300 dark:border-secondary-700 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-secondary-800 text-secondary-900 dark:text-white"
+                />
+                {/* Search results dropdown - Fixed positioning */}
+                {showDropdown &&
+                  debouncedQuery &&
+                  debouncedQuery.length >= 2 && (
+                    <div className="absolute z-50 w-full bg-white dark:bg-secondary-800 rounded-lg shadow-lg border border-secondary-200 dark:border-secondary-700 max-h-60 overflow-y-auto top-full left-0 mt-1">
+                      {isSearching ? (
+                        <div className="p-3 text-center text-secondary-600 dark:text-secondary-400">
+                          <FaSpinner className="animate-spin inline mr-2" />
+                          Searching users...
+                        </div>
+                      ) : searchResults.users &&
+                        searchResults.users.length > 0 ? (
+                        <ul className="py-1">
+                          {searchResults.users
+                            .filter(
+                              (user) =>
+                                !selectedAssignees.some(
+                                  (a) => a._id === user._id
                                 )
-                                .map((user) => (
-                                  <li
-                                    key={user._id}
-                                    className="px-3 py-2 hover:bg-secondary-100 dark:hover:bg-secondary-700 cursor-pointer flex items-center justify-between"
-                                    onClick={() => {
-                                      handleAddAssignee(user);
-                                      // Close dropdown after selection
-                                      setShowDropdown(false);
-                                    }}
-                                  >
-                                    <div className="flex items-center">
-                                      <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-700 dark:text-primary-300 mr-3">
-                                        {user.name
-                                          ? user.name.charAt(0).toUpperCase()
-                                          : "U"}
-                                      </div>
-                                      <div>
-                                        <div className="font-medium text-secondary-900 dark:text-white">
-                                          {user.name || "User"}
-                                        </div>
-                                        <div className="text-xs text-secondary-500 dark:text-secondary-400">
-                                          {user.email || ""}
-                                        </div>
-                                      </div>
+                            )
+                            .map((user) => (
+                              <li
+                                key={user._id}
+                                className="px-3 py-2 hover:bg-secondary-100 dark:hover:bg-secondary-700 cursor-pointer flex items-center justify-between"
+                                onClick={() => {
+                                  handleAddAssignee(user);
+                                  // Close dropdown after selection
+                                  setShowDropdown(false);
+                                }}
+                              >
+                                <div className="flex items-center">
+                                  <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-700 dark:text-primary-300 mr-3">
+                                    {user.name
+                                      ? user.name.charAt(0).toUpperCase()
+                                      : "U"}
+                                  </div>
+                                  <div>
+                                    <div className="font-medium text-secondary-900 dark:text-white">
+                                      {user.name || "User"}
                                     </div>
-                                    <button
-                                      type="button"
-                                      className="ml-2 p-1.5 rounded-full bg-primary-50 hover:bg-primary-100 dark:bg-primary-900/30 dark:hover:bg-primary-800/50 text-primary-600 dark:text-primary-400"
-                                    >
-                                      <FaPlus size={10} />
-                                    </button>
-                                  </li>
-                                ))}
-                            </ul>
-                          ) : (
-                            <div className="p-3 text-center text-secondary-600 dark:text-secondary-400">
-                              No users found
-                            </div>
-                          )}
+                                    <div className="text-xs text-secondary-500 dark:text-secondary-400">
+                                      {user.email || ""}
+                                    </div>
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  className="ml-2 p-1.5 rounded-full bg-primary-50 hover:bg-primary-100 dark:bg-primary-900/30 dark:hover:bg-primary-800/50 text-primary-600 dark:text-primary-400"
+                                >
+                                  <FaPlus size={10} />
+                                </button>
+                              </li>
+                            ))}
+                        </ul>
+                      ) : (
+                        <div className="p-3 text-center text-secondary-600 dark:text-secondary-400">
+                          No users found
                         </div>
                       )}
-                  </div>
-                  <p className="mt-1.5 text-xs text-secondary-500 dark:text-secondary-400">
-                    Type at least 2 characters to search for users
-                  </p>
-                </div>
-              )}
-
-              {/* Note for non-owners */}
-              {!isOwner && (
-                <div className="mt-2 p-2.5 bg-secondary-50 dark:bg-secondary-800/50 border border-secondary-200 dark:border-secondary-700 rounded-lg">
-                  <p className="text-xs text-secondary-600 dark:text-secondary-400 italic">
-                    Note: Only task owners can edit assignees and delete tasks.
-                    This task is owned by {task.owner?.name || "another user"}.
-                  </p>
-                </div>
-              )}
+                    </div>
+                  )}
+              </div>
+              <p className="mt-1.5 text-xs text-secondary-500 dark:text-secondary-400">
+                Type at least 2 characters to search for users
+              </p>
             </div>
+          )}
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-secondary-200 dark:border-secondary-700">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 bg-secondary-100 dark:bg-secondary-800 hover:bg-secondary-200 dark:hover:bg-secondary-700 text-secondary-700 dark:text-secondary-300 rounded-lg font-medium transition-all"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isUpdating || isAddingAssignee || isRemovingAssignee}
-                className="px-6 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium shadow-sm hover:shadow-lg transition-all hover:-translate-y-1 flex items-center"
-              >
-                {isUpdating ? (
-                  <>
-                    <FaSpinner className="animate-spin mr-2" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <FaSave className="mr-2" />
-                    Save Changes
-                  </>
-                )}
-              </button>
+          {/* Note for non-owners */}
+          {!isOwner && (
+            <div className="mt-2 p-2.5 bg-secondary-50 dark:bg-secondary-800/50 border border-secondary-200 dark:border-secondary-700 rounded-lg">
+              <p className="text-xs text-secondary-600 dark:text-secondary-400 italic">
+                Note: Only task owners can edit assignees and delete tasks.
+                This task is owned by {task.owner?.name || "another user"}.
+              </p>
             </div>
-          </form>
+          )}
         </div>
-      </div>
-    </div>
+      </form>
+    </Modal>
   );
 };
 

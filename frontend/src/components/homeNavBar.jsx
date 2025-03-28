@@ -1,35 +1,13 @@
 // HomeNavbar.jsx
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { FaTasks, FaMoon, FaSun, FaBars, FaTimes } from "react-icons/fa";
+import { FaTasks, FaBars, FaTimes } from "react-icons/fa";
+import DarkModeToggle from "./DarkModeToggle";
 
 const HomeNavBar = () => {
-  const [darkMode, setDarkMode] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
-
-  // Handle dark mode toggle
-  useEffect(() => {
-    const isDark = localStorage.getItem('darkMode') === 'true';
-    setDarkMode(isDark);
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, []);
-  
-  const toggleDarkMode = () => {
-    const newDarkMode = !darkMode;
-    setDarkMode(newDarkMode);
-    localStorage.setItem('darkMode', newDarkMode);
-    if (newDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  };
   
   // Handle navbar style on scroll
   useEffect(() => {
@@ -94,18 +72,8 @@ const HomeNavBar = () => {
             </nav>
             
             <div className="flex items-center gap-3 ml-3">
-              {/* Dark mode toggle */}
-              <button 
-                onClick={toggleDarkMode}
-                className={`p-2 rounded-full ${isScrolled ? 'hover:bg-primary-50 dark:hover:bg-white/10' : 'hover:bg-white/10'} transition-colors ${isScrolled ? 'text-primary-600 dark:text-white' : 'text-white'}`}
-                aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-              >
-                {darkMode ? (
-                  <FaSun className="h-5 w-5 text-yellow-300" />
-                ) : (
-                  <FaMoon className="h-5 w-5 text-purple-500" />
-                )}
-              </button>
+              {/* Dark mode toggle - now using our centralized component */}
+              <DarkModeToggle className={isScrolled ? '' : 'text-white'} />
               
               <Link
                 to="/login"
@@ -118,18 +86,8 @@ const HomeNavBar = () => {
           
           {/* Mobile menu button */}
           <div className="flex md:hidden items-center gap-3">
-            {/* Dark mode toggle (mobile) */}
-            <button 
-              onClick={toggleDarkMode}
-              className={`p-2 rounded-full ${isScrolled ? 'hover:bg-primary-50 dark:hover:bg-white/10' : 'hover:bg-white/10'} transition-colors ${isScrolled ? 'text-primary-600 dark:text-white' : 'text-white'}`}
-              aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-            >
-              {darkMode ? (
-                <FaSun className="h-5 w-5 text-yellow-300" />
-              ) : (
-                <FaMoon className="h-5 w-5 text-purple-500" />
-              )}
-            </button>
+            {/* Dark mode toggle (mobile) - now using our centralized component */}
+            <DarkModeToggle className={isScrolled ? '' : 'text-white'} />
             
             <button
               type="button"
