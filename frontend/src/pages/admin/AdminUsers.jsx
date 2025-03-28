@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { FaExclamationCircle, FaTimes } from "react-icons/fa";
-import { toast } from "react-toastify";
+import { showSuccessToast, showErrorToast } from "../../utils/toastUtils";
 import {
   useGetAdminUsersQuery,
   useInviteUserMutation,
@@ -28,10 +28,10 @@ const AdminUsers = () => {
     if (!window.confirm("Are you sure you want to delete this user?")) return;
     try {
       await deleteUser(userId).unwrap();
-      toast.success("User deleted successfully");
+      showSuccessToast("User deleted successfully");
       refetch();
     } catch (err) {
-      toast.error(err.data?.message || "Failed to delete user");
+      showErrorToast(err.data?.message || "Failed to delete user");
     }
   };
 
@@ -40,17 +40,17 @@ const AdminUsers = () => {
     try {
       if (editingUser) {
         await updateUser({ userId: editingUser._id, ...newUser }).unwrap();
-        toast.success("User updated successfully");
+        showSuccessToast("User updated successfully");
       } else {
         await inviteUser(newUser).unwrap();
-        toast.success("Invitation sent successfully");
+        showSuccessToast("Invitation sent successfully");
       }
       setShowCreateUser(false);
       setEditingUser(null);
       setNewUser({ name: "", email: "", role: "user" });
       refetch();
     } catch (err) {
-      toast.error(err.data?.message || "Failed to process user");
+      showErrorToast(err.data?.message || "Failed to process user");
     }
   };
 

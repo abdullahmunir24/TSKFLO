@@ -1,7 +1,7 @@
 import { apiSlice } from "../../app/api/apiSlice";
 import { getSocket } from "../../services/socketService";
 import { selectCurrentUserId } from "../auth/authSlice";
-import { toast } from "react-toastify";
+import { showInfoToast } from "../../utils/toastUtils";
 
 export const messageApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
@@ -212,11 +212,8 @@ const onStartListening = (dispatch, api) => {
                       notificationMessage = `Your conversation with ${name} has been deleted.`;
                     }
 
-                    // Show toast notification
-                    toast.info(notificationMessage, {
-                      position: "top-right",
-                      autoClose: 5000,
-                    });
+                    // Show toast notification using the utilities
+                    showInfoToast(notificationMessage);
                   }
 
                   // Remove the conversation from the array

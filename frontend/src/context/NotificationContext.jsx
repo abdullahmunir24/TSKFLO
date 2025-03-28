@@ -12,7 +12,7 @@ import {
   selectCurrentUserId,
 } from "../features/auth/authSlice";
 import { useGetAllConversationsQuery } from "../features/messages/messageApiSlice";
-import { toast } from "react-toastify";
+import { showCustomToast } from "../utils/toastUtils";
 import { useLocation } from "react-router-dom";
 
 const NotificationContext = createContext();
@@ -84,16 +84,14 @@ export const NotificationProvider = ({ children }) => {
           return updated;
         });
 
-        // Show toast notification with more prominent styling
-        toast.info(<div>New message from {message.sender.name}</div>, {
-          position: "top-right",
-          autoClose: 5000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          className: "notification-toast",
-        });
+        // Show toast notification with more prominent styling using the new utility
+        showCustomToast(
+          <div>New message from {message.sender.name}</div>,
+          "info",
+          {
+            className: "notification-toast",
+          }
+        );
       }
     };
 
