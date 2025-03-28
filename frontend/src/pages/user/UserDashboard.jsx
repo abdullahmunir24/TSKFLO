@@ -40,6 +40,7 @@ import {
 } from "../../features/auth/authSlice";
 import { setUserData } from "../../features/auth/authSlice";
 import EditTaskModal from "../../components/EditTaskModal";
+import Pagination from "../../components/Pagination";
 
 const UserDashboard = () => {
   const dispatch = useDispatch();
@@ -362,49 +363,6 @@ const UserDashboard = () => {
   const doneCount = globalMetrics.doneCount;
   const completionRate = globalMetrics.completionRate;
 
-  // Generate pagination numbers
-  const generatePaginationNumbers = () => {
-    if (totalPages <= 1) return [];
-
-    let pages = [];
-    // Always show first page
-    pages.push(1);
-
-    // Calculate range of pages to show around current page
-    let startPage = Math.max(2, currentPage - 1);
-    let endPage = Math.min(totalPages - 1, currentPage + 1);
-
-    // Add ellipsis after first page if needed
-    if (startPage > 2) {
-      pages.push("...");
-    }
-
-    // Add pages in the middle
-    for (let i = startPage; i <= endPage; i++) {
-      pages.push(i);
-    }
-
-    // Add ellipsis before last page if needed
-    if (endPage < totalPages - 1) {
-      pages.push("...");
-    }
-
-    // Always show last page if more than 1 page
-    if (totalPages > 1) {
-      pages.push(totalPages);
-    }
-
-    return pages;
-  };
-
-  // Function to determine the correct path for creating tasks with query parameter
-  const getCreateTaskPath = () => {
-    // Check if we're in the admin section by examining the current path
-    return location.pathname.includes("/admin")
-      ? "/admin/createTask?redirectTo=/admin/dashboard"
-      : "/createTask?redirectTo=/dashboard";
-  };
-
   return (
     <div className="min-h-screen bg-secondary-50 dark:bg-secondary-900 pt-20 pb-5 px-4 sm:px-6 lg:px-8 transition-colors duration-300">
       <div className="max-w-7xl mx-auto">
@@ -425,7 +383,7 @@ const UserDashboard = () => {
               tasks
             </p>
             <Link
-              to={getCreateTaskPath()}
+              to={location.pathname.includes("/admin") ? "/admin/createTask?redirectTo=/admin/dashboard" : "/createTask?redirectTo=/dashboard"}
               className="inline-flex items-center px-4 py-2 bg-white text-primary-700 rounded-lg font-medium hover:bg-primary-50 transition-all shadow-sm hover-lift"
             >
               <FaPlus className="mr-2" /> Create New Task
@@ -713,7 +671,7 @@ const UserDashboard = () => {
                     : "You don't have any tasks yet"}
                 </p>
                 <Link
-                  to={getCreateTaskPath()}
+                  to={location.pathname.includes("/admin") ? "/admin/createTask?redirectTo=/admin/dashboard" : "/createTask?redirectTo=/dashboard"}
                   className="inline-flex items-center px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg shadow-md hover:shadow-lg transition-all hover:-translate-y-1"
                 >
                   <FaPlus className="mr-2" /> Create New Task
@@ -849,56 +807,11 @@ const UserDashboard = () => {
                 {/* Pagination Controls */}
                 {totalPages > 1 && (
                   <div className="mt-8 flex justify-center">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handlePageChange(currentPage - 1)}
-                        disabled={currentPage === 1}
-                        className={`flex items-center justify-center w-9 h-9 rounded-lg ${
-                          currentPage === 1
-                            ? "text-secondary-400 dark:text-secondary-600 cursor-not-allowed"
-                            : "text-secondary-700 dark:text-secondary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:text-primary-600 dark:hover:text-primary-400"
-                        }`}
-                        aria-label="Previous page"
-                      >
-                        {"<"}
-                      </button>
-
-                      {generatePaginationNumbers().map((page, index) =>
-                        page === "..." ? (
-                          <span
-                            key={`ellipsis-${index}`}
-                            className="text-secondary-500 dark:text-secondary-400 px-1"
-                          >
-                            ...
-                          </span>
-                        ) : (
-                          <button
-                            key={`page-${page}`}
-                            onClick={() => handlePageChange(page)}
-                            className={`flex items-center justify-center w-9 h-9 rounded-lg ${
-                              currentPage === page
-                                ? "bg-primary-500 text-white"
-                                : "text-secondary-700 dark:text-secondary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:text-primary-600 dark:hover:text-primary-400"
-                            }`}
-                          >
-                            {page}
-                          </button>
-                        )
-                      )}
-
-                      <button
-                        onClick={() => handlePageChange(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                        className={`flex items-center justify-center w-9 h-9 rounded-lg ${
-                          currentPage === totalPages
-                            ? "text-secondary-400 dark:text-secondary-600 cursor-not-allowed"
-                            : "text-secondary-700 dark:text-secondary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:text-primary-600 dark:hover:text-primary-400"
-                        }`}
-                        aria-label="Next page"
-                      >
-                        {">"}
-                      </button>
-                    </div>
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      onPageChange={handlePageChange}
+                    />
                   </div>
                 )}
               </>
