@@ -98,24 +98,8 @@ const AdminUsers = () => {
         </p>
       </div>
 
-      {/* Error handling */}
-      {isError && (
-        <div
-          className="bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 text-danger-700 dark:text-danger-300 px-4 py-3 rounded-lg shadow-sm mb-4"
-          role="alert"
-        >
-          <div className="flex items-center">
-            <FaExclamationCircle className="mr-2" />
-            <strong className="font-bold">Error!</strong>
-            <span className="ml-2">
-              {error.message || "Failed to fetch users"}
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* Filters and Search */}
-      <div className="flex justify-between mb-4">
+      {/* Filters, Search, and Invite User Button */}
+      <div className="flex justify-between items-center mb-4">
         <div className="flex space-x-4">
           <input
             type="text"
@@ -137,14 +121,41 @@ const AdminUsers = () => {
             <option value="user">User</option>
             <option value="admin">Admin</option>
           </select>
+          <button
+            onClick={() => setFilters({ search: "", role: "" })}
+            className="px-4 py-2 bg-gray-200 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-300 dark:hover:bg-secondary-600"
+          >
+            Clear Filters
+          </button>
         </div>
         <button
-          onClick={() => setFilters({ search: "", role: "" })}
-          className="px-4 py-2 bg-gray-200 dark:bg-secondary-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-300 dark:hover:bg-secondary-600"
+          onClick={() => {
+            setEditingUser(null);
+            setNewUser({ name: "", email: "", role: "user" });
+            setInvitationLink("");
+            setShowCreateUser(true);
+          }}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
-          Clear Filters
+          Invite User
         </button>
       </div>
+
+      {/* Error handling */}
+      {isError && (
+        <div
+          className="bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 text-danger-700 dark:text-danger-300 px-4 py-3 rounded-lg shadow-sm mb-4"
+          role="alert"
+        >
+          <div className="flex items-center">
+            <FaExclamationCircle className="mr-2" />
+            <strong className="font-bold">Error!</strong>
+            <span className="ml-2">
+              {error.message || "Failed to fetch users"}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* User Table */}
       <div className="bg-white dark:bg-secondary-800 rounded-lg shadow overflow-hidden">
