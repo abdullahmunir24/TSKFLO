@@ -6,8 +6,6 @@ import {
   FaUserCircle,
   FaEnvelope,
   FaSignOutAlt,
-  FaMoon,
-  FaSun,
   FaPlus,
   FaBell,
 } from "react-icons/fa";
@@ -21,6 +19,7 @@ import { useLogoutMutation } from "../features/auth/authApiSlice";
 import { useGetMyDataQuery } from "../features/user/userApiSlice";
 import UserProfilePopup from "./UserProfilePopup";
 import { useNotification } from "../context/NotificationContext";
+import DarkModeToggle from "./DarkModeToggle";
 
 const UserDashNavbar = () => {
   const location = useLocation();
@@ -46,35 +45,12 @@ const UserDashNavbar = () => {
 
   // Local state
   const [showPopup, setShowPopup] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([
     { id: 1, text: "New task assigned to you", isRead: false },
     { id: 2, text: "Task deadline approaching", isRead: false },
   ]);
-
-  // Handle dark mode toggle
-  useEffect(() => {
-    const isDark = localStorage.getItem("darkMode") === "true";
-    setDarkMode(isDark);
-    if (isDark) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, []);
-
-  const toggleDarkMode = () => {
-    const newDarkMode = !darkMode;
-    setDarkMode(newDarkMode);
-    localStorage.setItem("darkMode", newDarkMode);
-    if (newDarkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  };
 
   // Handle navbar style on scroll
   useEffect(() => {
@@ -183,20 +159,8 @@ const UserDashNavbar = () => {
 
             {/* User actions */}
             <div className="flex items-center gap-2">
-              {/* Dark mode toggle */}
-              <button
-                onClick={toggleDarkMode}
-                className="p-1.5 rounded-lg hover:bg-secondary-100 dark:hover:bg-secondary-800 transition-colors text-secondary-600 dark:text-secondary-400 h-8 w-8 flex items-center justify-center"
-                aria-label={
-                  darkMode ? "Switch to light mode" : "Switch to dark mode"
-                }
-              >
-                {darkMode ? (
-                  <FaSun className="h-4 w-4 text-warning-400" />
-                ) : (
-                  <FaMoon className="h-4 w-4" />
-                )}
-              </button>
+              {/* Dark mode toggle - now using the centralized component */}
+              <DarkModeToggle />
 
               {/* User profile dropdown trigger */}
               <div className="relative">

@@ -12,3 +12,4 @@ node_modules
 *.sw?
 backend/logs/errors.log
 .qodo
+.env
