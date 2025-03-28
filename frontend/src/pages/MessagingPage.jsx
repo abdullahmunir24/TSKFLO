@@ -1,18 +1,9 @@
-import React, { useState, useMemo, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
-  FaUser,
-  FaPaperPlane,
   FaCommentMedical,
   FaSearch,
-  FaTimes,
-  FaCheck,
-  FaEllipsisH,
-  FaArrowLeft,
-  FaPaperclip,
-  FaSmile,
-  FaUsers,
 } from "react-icons/fa";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import {
   useGetAllConversationsQuery,
   useCreateConversationMutation,
@@ -24,7 +15,14 @@ import { useSearchUsersQuery } from "../features/user/userApiSlice";
 import { selectCurrentUserId } from "../features/auth/authSlice";
 import { getSocket } from "../services/socketService";
 import { useNotification } from "../context/NotificationContext";
-import { toast } from "react-toastify";
+import { showErrorToast } from "../utils/toastUtils";
+
+// Import the new components
+import ConversationList from "../components/chat/ConversationList";
+import ConversationDetail from "../components/chat/ConversationDetail";
+import MessageDisplay from "../components/chat/MessageDisplay";
+import MessageInput from "../components/chat/MessageInput";
+import UserSearch from "../components/chat/UserSearch";
 
 const MessagingPage = () => {
   // State for user search input and results
@@ -38,10 +36,8 @@ const MessagingPage = () => {
   const [showParticipants, setShowParticipants] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(true);
   const [showMenu, setShowMenu] = useState(false);
-  const [clearingChat, setClearingChat] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const dispatch = useDispatch();
 
   const { data: searchResult, isLoading: isLoadingSearching } =
     useSearchUsersQuery(debouncedSearchTerm, {
@@ -140,15 +136,6 @@ const MessagingPage = () => {
     );
   };
 
-  // Filter conversations by search term
-  const filteredConversations = useMemo(() => {
-    if (!conversations) return [];
-    return conversations.filter((conv) => {
-      const name = getConversationName(conv).toLowerCase();
-      return name.includes(searchTerm.toLowerCase());
-    });
-  }, [conversations, searchTerm]);
-
   // Socket listener just for tracking unread messages
   useEffect(() => {
     if (!socket) return;
@@ -196,7 +183,6 @@ const MessagingPage = () => {
   const {
     data: messages,
     isLoading: isLoadingMessages,
-    refetch,
   } = useGetMessagesQuery(selectedConversation, {
     skip: !selectedConversation,
   });
@@ -213,7 +199,7 @@ const MessagingPage = () => {
       // The UI update will happen automatically through the socket event
     } catch (error) {
       console.error("Error deleting conversation:", error);
-      toast.error("Failed to delete conversation");
+      showErrorToast("Failed to delete conversation");
     } finally {
       setDeleting(false);
     }
@@ -231,10 +217,11 @@ const MessagingPage = () => {
       }).unwrap();
 
       setSelectedUsers([]);
+      setGroupName("");
       document.getElementById("new-conversation-modal").close();
     } catch (error) {
       console.error("Failed to create conversation:", error);
-      alert("Failed to create conversation. Check console for details.");
+      showErrorToast("Failed to create conversation");
     }
   };
 
@@ -251,6 +238,7 @@ const MessagingPage = () => {
       messageInputRef.current?.focus();
     } catch (error) {
       console.error("Failed to send message:", error);
+      showErrorToast("Failed to send message");
     }
   };
 
@@ -321,7 +309,7 @@ const MessagingPage = () => {
   useEffect(() => {
     if (!socket) return;
 
-    const handleConversationDeleted = ({ conversationId, deletedBy }) => {
+    const handleConversationDeleted = ({ conversationId }) => {
       // If this is the conversation we're currently viewing, reset the view
       if (selectedConversation === conversationId) {
         setSelectedConversation(null);
@@ -374,309 +362,27 @@ const MessagingPage = () => {
                 >
                   <FaCommentMedical size={16} />
                 </button>
-
-                {/* Modal for creating new conversation */}
-                <dialog
-                  id="new-conversation-modal"
-                  className="p-0 rounded-lg shadow-xl fixed top-[35%] left-1/2 
-                  transform -translate-x-1/2 -translate-y-1/2 z-50 bg-white dark:bg-secondary-800
-                  w-11/12 max-w-md max-h-[80vh] overflow-hidden border border-secondary-200 dark:border-secondary-700"
-                >
-                  <div className="bg-primary-600 text-white p-4">
-                    <h3 className="text-xl font-semibold text-center">
-                      New Conversation
-                    </h3>
-                  </div>
-
-                  <form onSubmit={handleCreateConversation} className="p-6">
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
-                        Participants
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={searchUser}
-                          onChange={(e) => setSearchUser(e.target.value)}
-                          placeholder="Search by name or email"
-                          className="w-full p-3 border rounded-lg 
-                        focus:ring-2 focus:ring-primary-500 focus:border-primary-500
-                        bg-white dark:bg-secondary-700 text-secondary-900 dark:text-white
-                        border-secondary-300 dark:border-secondary-600"
-                        />
-                        {searchUser && (
-                          <button
-                            type="button"
-                            onClick={() => setSearchUser("")}
-                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-secondary-400 hover:text-secondary-600"
-                          >
-                            <FaTimes size={16} />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Search Results */}
-                    {!searchUser.trim() ? null : isLoadingSearching ? (
-                      <div className="mb-4 flex justify-center">
-                        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-primary-600"></div>
-                      </div>
-                    ) : searchResults.length > 0 ? (
-                      <div className="mb-4 max-h-48 overflow-y-auto border rounded-lg bg-white dark:bg-secondary-700 border-secondary-200 dark:border-secondary-600 divide-y divide-secondary-200 dark:divide-secondary-600">
-                        {searchResults.map((user) => (
-                          <div
-                            key={user._id}
-                            onClick={() => toggleUserSelection(user)}
-                            className={`flex items-center justify-between p-3 cursor-pointer transition-colors duration-150
-                          ${
-                            selectedUsers.some((u) => u._id === user._id)
-                              ? "bg-primary-50 dark:bg-primary-900/30"
-                              : "hover:bg-secondary-50 dark:hover:bg-secondary-700/70"
-                          }`}
-                          >
-                            <div className="flex items-center">
-                              <div className="w-10 h-10 bg-primary-100 dark:bg-primary-800 rounded-full flex items-center justify-center mr-3 text-primary-600 dark:text-primary-300">
-                                <FaUser size={16} />
-                              </div>
-                              <div>
-                                <p className="font-medium text-secondary-900 dark:text-white">
-                                  {user.name}
-                                </p>
-                                <p className="text-xs text-secondary-500 dark:text-secondary-400">
-                                  {user.email}
-                                </p>
-                              </div>
-                            </div>
-                            {selectedUsers.some((u) => u._id === user._id) && (
-                              <div className="bg-primary-500 text-white p-1 rounded-full">
-                                <FaCheck size={12} />
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="mb-4 text-secondary-500 dark:text-secondary-400 text-center py-2">
-                        No users found.
-                      </p>
-                    )}
-
-                    {/* Selected Users */}
-                    {selectedUsers.length > 0 && (
-                      <div className="mb-4">
-                        <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
-                          Selected ({selectedUsers.length})
-                        </label>
-                        <div className="flex flex-wrap gap-2 bg-secondary-50 dark:bg-secondary-700/50 p-3 rounded-lg">
-                          {selectedUsers.map((user) => (
-                            <div
-                              key={user._id}
-                              className="bg-primary-100 dark:bg-primary-800/60 text-primary-800 dark:text-primary-300 px-3 py-1.5 rounded-full text-sm flex items-center"
-                            >
-                              {user.name}
-                              <button
-                                type="button"
-                                onClick={() => toggleUserSelection(user)}
-                                className="ml-2 text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 focus:outline-none"
-                              >
-                                <FaTimes size={12} />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Group Name */}
-                    {selectedUsers.length > 1 && (
-                      <div className="mb-4">
-                        <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
-                          Group Name
-                        </label>
-                        <input
-                          type="text"
-                          value={groupName}
-                          onChange={(e) => setGroupName(e.target.value)}
-                          className="w-full p-3 border rounded-lg 
-                        focus:ring-2 focus:ring-primary-500 focus:border-primary-500
-                        bg-white dark:bg-secondary-700 text-secondary-900 dark:text-white
-                        border-secondary-300 dark:border-secondary-600"
-                        />
-                      </div>
-                    )}
-
-                    <div className="flex justify-end space-x-3 mt-6">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          document
-                            .getElementById("new-conversation-modal")
-                            .close();
-                          setSearchUser("");
-                          setSearchResults([]);
-                          setSelectedUsers([]);
-                        }}
-                        className="px-4 py-2 border rounded-lg text-secondary-700 dark:text-secondary-300 bg-white dark:bg-secondary-800
-                        hover:bg-secondary-50 dark:hover:bg-secondary-700 border-secondary-300 dark:border-secondary-600
-                        transition-colors focus:outline-none focus:ring-2 focus:ring-secondary-500"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={selectedUsers.length === 0}
-                        className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 
-                        disabled:bg-primary-400 disabled:cursor-not-allowed transition-colors
-                        focus:outline-none focus:ring-2 focus:ring-primary-500"
-                      >
-                        Start Chat
-                      </button>
-                    </div>
-                  </form>
-                </dialog>
               </div>
             </div>
 
-            {/* Search Bar - Only Visible When Active */}
-            {showSearchBar && (
-              <div
-                ref={searchRef}
-                className="relative p-4 border-b border-secondary-200 dark:border-secondary-700 animate-fade-in"
-              >
-                <div className="relative">
-                  <input
-                    type="text"
-                    className="w-full py-2 pl-10 pr-4 border border-secondary-300 dark:border-secondary-600 rounded-full 
-                    focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
-                    bg-white dark:bg-secondary-700 text-secondary-900 dark:text-white"
-                    placeholder="Search conversations..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    autoFocus
-                  />
-                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-400 dark:text-secondary-500">
-                    <FaSearch size={16} />
-                  </div>
-                  <button
-                    onClick={() => setShowSearchBar(false)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-secondary-400 dark:text-secondary-500 
-                    hover:text-secondary-600 dark:hover:text-secondary-400 focus:outline-none"
-                    title="Close search"
-                  >
-                    <FaTimes size={16} />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Conversation List */}
-            <div className="divide-y divide-secondary-200 dark:divide-secondary-700">
-              {isLoadingConversations ? (
-                <div className="p-6 flex justify-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
-                </div>
-              ) : filteredConversations.length === 0 ? (
-                <div className="py-8 px-4 text-center">
-                  <div className="text-secondary-400 dark:text-secondary-500 mb-4">
-                    <FaCommentMedical size={36} className="mx-auto" />
-                  </div>
-                  <p className="text-secondary-500 dark:text-secondary-400 mb-2">
-                    No conversations found
-                  </p>
-                  <button
-                    onClick={() =>
-                      document
-                        .getElementById("new-conversation-modal")
-                        .showModal()
-                    }
-                    className="text-primary-600 dark:text-primary-400 text-sm hover:underline"
-                  >
-                    Start a new conversation
-                  </button>
-                </div>
-              ) : (
-                filteredConversations.map((conversation) => {
-                  const isActive = selectedConversation === conversation._id;
-                  const isGroup = isGroupChat(conversation);
-                  // Check for unread status from our map and other sources
-                  const hasUnread =
-                    unreadCountsRef.current.get(conversation._id) > 0 ||
-                    unreadConversations.has(conversation._id) ||
-                    (hasUnreadMessages && hasUnreadMessages(conversation._id));
-
-                  return (
-                    <div
-                      key={conversation._id}
-                      className={`p-4 cursor-pointer transition-colors duration-150 hover:bg-secondary-50 dark:hover:bg-secondary-700/50 flex items-center
-                      ${
-                        isActive ? "bg-primary-50 dark:bg-primary-900/30" : ""
-                      }`}
-                      onClick={() => {
-                        setSelectedConversation(conversation._id);
-                        setShowMobileMenu(false);
-                      }}
-                    >
-                      <div className="relative mr-3">
-                        <div className="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-800 flex items-center justify-center text-primary-600 dark:text-primary-300">
-                          {isGroup ? (
-                            <FaUsers className="text-lg" />
-                          ) : (
-                            <FaUser className="text-lg" />
-                          )}
-                        </div>
-                        {hasUnread && (
-                          <div className="absolute top-0 right-0 w-4 h-4 rounded-full bg-primary-600 border-2 border-white dark:border-secondary-800"></div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-baseline">
-                          <h3
-                            className={`text-base font-medium truncate ${
-                              hasUnread
-                                ? "text-primary-700 dark:text-primary-300 font-semibold"
-                                : isActive
-                                ? "text-primary-700 dark:text-primary-300"
-                                : "text-secondary-900 dark:text-white"
-                            }`}
-                          >
-                            {getConversationName(conversation)}
-                          </h3>
-                          <span className="text-xs text-secondary-500 dark:text-secondary-400 ml-2 whitespace-nowrap">
-                            {conversation.lastMessage
-                              ? new Date(
-                                  conversation.lastMessage.createdAt
-                                ).toLocaleTimeString([], {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })
-                              : ""}
-                          </span>
-                        </div>
-                        <p
-                          className={`text-sm truncate ${
-                            hasUnread
-                              ? "text-secondary-800 dark:text-secondary-200 font-medium"
-                              : "text-secondary-500 dark:text-secondary-400"
-                          }`}
-                        >
-                          {conversation.lastMessage
-                            ? conversation.lastMessage.text
-                            : "No messages yet..."}
-                        </p>
-                      </div>
-                      {hasUnread && (
-                        <div className="ml-2 w-5 h-5 bg-primary-600 rounded-full flex items-center justify-center text-white text-xs">
-                          {unreadCountsRef.current.get(conversation._id) > 9
-                            ? "9+"
-                            : unreadCountsRef.current.get(conversation._id) ||
-                              1}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
-              )}
-            </div>
+            {/* Conversation List Component */}
+            <ConversationList 
+              conversations={conversations}
+              isLoadingConversations={isLoadingConversations}
+              selectedConversation={selectedConversation}
+              setSelectedConversation={setSelectedConversation}
+              setShowMobileMenu={setShowMobileMenu}
+              unreadCountsRef={unreadCountsRef}
+              unreadConversations={unreadConversations}
+              hasUnreadMessages={hasUnreadMessages}
+              getConversationName={getConversationName}
+              isGroupChat={isGroupChat}
+              showSearchBar={showSearchBar}
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              setShowSearchBar={setShowSearchBar}
+              searchRef={searchRef}
+            />
           </div>
 
           {/* Main Chat Area */}
@@ -687,263 +393,41 @@ const MessagingPage = () => {
           >
             {selectedConversation ? (
               <div className="flex flex-col h-full">
-                {/* Chat Header */}
-                <div className="p-4 bg-white dark:bg-secondary-800 border-b border-secondary-200 dark:border-secondary-700 flex items-center justify-between sticky top-0 z-10 shadow-sm flex-shrink-0">
-                  {(() => {
-                    const currentConversation = conversations?.find(
-                      (c) => c._id === selectedConversation
-                    );
-                    const isGroup = isGroupChat(currentConversation);
+                {/* Conversation Detail Component */}
+                <ConversationDetail 
+                  selectedConversation={selectedConversation}
+                  conversations={conversations}
+                  setShowMobileMenu={setShowMobileMenu}
+                  currentUserId={currentUserId}
+                  getConversationName={getConversationName}
+                  isGroupChat={isGroupChat}
+                  showMenu={showMenu}
+                  setShowMenu={setShowMenu}
+                  setShowDeleteConfirm={setShowDeleteConfirm}
+                  deleting={deleting}
+                  showParticipants={showParticipants}
+                  setShowParticipants={setShowParticipants}
+                />
 
-                    return (
-                      <div className="w-full">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center">
-                            <button
-                              onClick={() => setShowMobileMenu(true)}
-                              className="md:hidden mr-3 text-secondary-600 dark:text-secondary-400 hover:text-secondary-800 dark:hover:text-secondary-200"
-                            >
-                              <FaArrowLeft size={18} />
-                            </button>
-                            <div className="flex items-center">
-                              <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-800 flex items-center justify-center text-primary-600 dark:text-primary-300 mr-3">
-                                {isGroup ? (
-                                  <FaUsers size={16} />
-                                ) : (
-                                  <FaUser size={16} />
-                                )}
-                              </div>
-                              <div>
-                                <h3 className="text-lg font-semibold text-secondary-900 dark:text-white">
-                                  {currentConversation
-                                    ? getConversationName(currentConversation)
-                                    : "Loading..."}
-                                </h3>
-                                {isGroup && (
-                                  <p className="text-xs text-secondary-500 dark:text-secondary-400">
-                                    {currentConversation?.participants
-                                      ?.length || 0}{" "}
-                                    members
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          </div>
+                {/* Message Display Component */}
+                <MessageDisplay 
+                  messages={messages}
+                  isLoadingMessages={isLoadingMessages}
+                  selectedConversation={selectedConversation}
+                  currentUserId={currentUserId}
+                  messagesEndRef={messagesEndRef}
+                  focusMessageInput={focusMessageInput}
+                  isGroupChat={isGroupChat}
+                  conversations={conversations}
+                />
 
-                          <div className="flex items-center space-x-2">
-                            {isGroup && (
-                              <button
-                                onClick={() =>
-                                  setShowParticipants(!showParticipants)
-                                }
-                                className="p-2 text-secondary-600 dark:text-secondary-400 hover:text-secondary-800 dark:hover:text-secondary-200 
-                                hover:bg-secondary-100 dark:hover:bg-secondary-700 rounded-full transition-colors"
-                                title="View Participants"
-                              >
-                                <FaUser size={16} />
-                              </button>
-                            )}
-                            <div className="relative">
-                              <button
-                                onClick={() => setShowMenu(!showMenu)}
-                                className="p-2 text-secondary-600 dark:text-secondary-400 hover:text-secondary-800 dark:hover:text-secondary-200 
-                                hover:bg-secondary-100 dark:hover:bg-secondary-700 rounded-full transition-colors"
-                                title="More options"
-                              >
-                                <FaEllipsisH size={16} />
-                              </button>
-
-                              {/* Dropdown Menu - only Clear Chat button */}
-                              {showMenu && (
-                                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-secondary-800 rounded-lg shadow-lg py-1 z-50 border border-secondary-200 dark:border-secondary-700 animate-fade-in">
-                                  <button
-                                    onClick={() => {
-                                      setShowDeleteConfirm(true);
-                                      setShowMenu(false);
-                                    }}
-                                    disabled={deleting}
-                                    className="w-full px-4 py-2 text-left text-sm text-red-500 hover:bg-secondary-100 dark:hover:bg-secondary-700/50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                  >
-                                    {deleting ? "Deleting..." : "Delete Chat"}
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        {isGroup &&
-                          showParticipants &&
-                          currentConversation?.participants && (
-                            <div className="mt-3 p-3 bg-secondary-50 dark:bg-secondary-700/50 rounded-lg animate-slide-up">
-                              <p className="text-xs text-secondary-500 dark:text-secondary-400 mb-2">
-                                Participants:
-                              </p>
-                              <div className="flex flex-wrap gap-1.5">
-                                {currentConversation.participants.map(
-                                  (participant) => (
-                                    <span
-                                      key={participant._id}
-                                      className="px-2.5 py-1 bg-primary-100 dark:bg-primary-800/60 text-primary-800 dark:text-primary-300 text-xs rounded-full"
-                                    >
-                                      {participant.name}
-                                    </span>
-                                  )
-                                )}
-                              </div>
-                            </div>
-                          )}
-                      </div>
-                    );
-                  })()}
-                </div>
-
-                {/* Messages Area */}
-                <div
-                  className="flex-1 p-4 overflow-y-auto"
-                  onClick={focusMessageInput}
-                >
-                  {isLoadingMessages ? (
-                    <div className="flex justify-center items-center h-full">
-                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
-                    </div>
-                  ) : messages?.length === 0 ? (
-                    <div className="flex flex-col justify-center items-center h-full text-secondary-500 dark:text-secondary-400 animate-fade-in">
-                      <div className="bg-secondary-200 dark:bg-secondary-700 w-16 h-16 rounded-full flex items-center justify-center mb-4">
-                        <FaCommentMedical
-                          className="text-secondary-400 dark:text-secondary-500"
-                          size={24}
-                        />
-                      </div>
-                      <p className="mb-2">No messages yet</p>
-                      <p className="text-sm">Start the conversation!</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {messages?.map((message, index) => {
-                        const currentConversation = conversations?.find(
-                          (c) => c._id === selectedConversation
-                        );
-                        const isGroup = isGroupChat(currentConversation);
-                        const isCurrentUser =
-                          message.sender._id === currentUserId;
-                        const showDate =
-                          index === 0 ||
-                          new Date(message.createdAt).toDateString() !==
-                            new Date(
-                              messages[index - 1].createdAt
-                            ).toDateString();
-
-                        return (
-                          <div key={message._id}>
-                            {showDate && (
-                              <div className="flex justify-center my-4">
-                                <div className="bg-secondary-200 dark:bg-secondary-700 text-secondary-600 dark:text-secondary-400 text-xs px-3 py-1 rounded-full">
-                                  {new Date(
-                                    message.createdAt
-                                  ).toLocaleDateString([], {
-                                    weekday: "short",
-                                    month: "short",
-                                    day: "numeric",
-                                  })}
-                                </div>
-                              </div>
-                            )}
-                            <div
-                              className={`flex ${
-                                isCurrentUser ? "justify-end" : "justify-start"
-                              }`}
-                            >
-                              <div className={`max-w-[75%] animate-slide-up`}>
-                                {/* Show sender name only in group chats and not for current user's messages */}
-                                {isGroup && !isCurrentUser && (
-                                  <div className="text-xs text-secondary-500 dark:text-secondary-400 ml-2 mb-1">
-                                    {message.sender.name}
-                                  </div>
-                                )}
-                                <div
-                                  className={`p-3 rounded-2xl shadow-sm ${
-                                    isCurrentUser
-                                      ? "bg-primary-600 text-white rounded-br-none"
-                                      : "bg-white dark:bg-secondary-800 text-secondary-900 dark:text-white rounded-bl-none"
-                                  }`}
-                                >
-                                  <p className="whitespace-pre-wrap">
-                                    {message.text}
-                                  </p>
-                                  <div
-                                    className={`text-xs mt-1 text-right ${
-                                      isCurrentUser
-                                        ? "text-primary-200"
-                                        : "text-secondary-500 dark:text-secondary-400"
-                                    }`}
-                                  >
-                                    {new Date(
-                                      message.createdAt
-                                    ).toLocaleTimeString([], {
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    })}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                      <div ref={messagesEndRef} />
-                    </div>
-                  )}
-                </div>
-
-                {/* Message Input - Make sure it's at the bottom */}
-                <div className="border-t border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-800 flex-shrink-0 sticky bottom-0">
-                  <form
-                    onSubmit={handleSendMessage}
-                    className="flex items-center space-x-2 p-3"
-                  >
-                    <div className="flex-1 bg-secondary-100 dark:bg-secondary-700 rounded-lg shadow-inner-glow px-3 py-2">
-                      <textarea
-                        ref={messageInputRef}
-                        className="w-full bg-transparent border-0 focus:ring-0 outline-none resize-none max-h-20 text-secondary-900 dark:text-white overflow-auto"
-                        placeholder="Type your message..."
-                        rows="1"
-                        value={messageText}
-                        onChange={(e) => {
-                          setMessageText(e.target.value);
-                          // Auto-resize textarea
-                          e.target.style.height = "auto";
-                          e.target.style.height = e.target.scrollHeight + "px";
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" && !e.shiftKey) {
-                            e.preventDefault();
-                            if (messageText.trim()) {
-                              handleSendMessage(e);
-                            }
-                          }
-                        }}
-                      />
-                      <div className="flex justify-end items-center mt-1">
-                        <p className="text-xs text-secondary-400 dark:text-secondary-500">
-                          {messageText.length > 0 ? messageText.length : ""}
-                          {messageText.length > 500 ? "/1000" : ""}
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      type="submit"
-                      className={`p-2.5 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                        messageText.trim()
-                          ? "bg-primary-600 text-white hover:bg-primary-700"
-                          : "bg-secondary-300 dark:bg-secondary-700 text-secondary-500 dark:text-secondary-400 cursor-not-allowed"
-                      } transition-colors`}
-                      disabled={!messageText.trim()}
-                    >
-                      <FaPaperPlane size={16} />
-                    </button>
-                  </form>
-                </div>
+                {/* Message Input Component */}
+                <MessageInput 
+                  messageText={messageText}
+                  setMessageText={setMessageText}
+                  handleSendMessage={handleSendMessage}
+                  messageInputRef={messageInputRef}
+                />
               </div>
             ) : (
               <div className="flex-1 flex items-center justify-center bg-secondary-100 dark:bg-secondary-900 bg-opacity-75 animate-fade-in">
@@ -976,6 +460,19 @@ const MessagingPage = () => {
         </div>
       </div>
 
+      {/* UserSearch Component */}
+      <UserSearch 
+        searchUser={searchUser}
+        setSearchUser={setSearchUser}
+        searchResults={searchResults}
+        isLoadingSearching={isLoadingSearching}
+        selectedUsers={selectedUsers}
+        toggleUserSelection={toggleUserSelection}
+        groupName={groupName}
+        setGroupName={setGroupName}
+        handleCreateConversation={handleCreateConversation}
+      />
+
       {/* Delete Confirmation Dialog */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
@@ -1002,7 +499,7 @@ const MessagingPage = () => {
               </button>
               <button
                 onClick={handleDeleteChat}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-70"
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed"
                 disabled={deleting}
               >
                 {deleting ? "Deleting..." : "Delete"}
