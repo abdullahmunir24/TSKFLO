@@ -60,6 +60,11 @@ describe("Task API Endpoints", () => {
     jest.clearAllMocks(); // Reset mocks
   });
 
+  //
+  // ─────────────────────────────────────────────────────────────────
+  //   GET /tasks -> getUserTasks
+  // ─────────────────────────────────────────────────────────────────
+  //
   describe("GET /tasks", () => {
     beforeEach(() => {
       process.env.NODE_ENV = "test";
@@ -108,6 +113,31 @@ describe("Task API Endpoints", () => {
 
       expect(response.status).toBe(404);
       expect(response.body.message).toBe("No user found for provided email");
+    });
+
+    it("should handle errors during task retrieval", async () => {
+      // Mock User.findOne to pass the initial check
+      User.findOne.mockReturnValue({
+        lean: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue(mockUser),
+      });
+
+      // Mock Task.find to throw an error
+      Task.find.mockReturnValue({
+        populate: jest.fn().mockReturnThis(),
+        populate: jest.fn().mockReturnThis(),
+        sort: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        lean: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockRejectedValue(new Error("Database error")),
+      });
+
+      const response = await request(app).get("/tasks");
+
+      // Assert error is handled properly
+      expect(response.status).toBe(500);
+      expect(response.body.message).toContain("Error retrieving tasks");
     });
   });
 
@@ -276,7 +306,11 @@ describe("Task API Endpoints", () => {
     });
   });
 
-  // PATCH /tasks/:taskId - Update a task
+  //
+  // ─────────────────────────────────────────────────────────────────
+  //   PATCH /tasks/:taskId -> updateTask
+  // ─────────────────────────────────────────────────────────────────
+  //
   describe("PATCH /tasks/:taskId", () => {
     it("should update the task and return the updated task", async () => {
       Task.findOne.mockImplementation(() => ({
@@ -507,7 +541,11 @@ describe("Task API Endpoints", () => {
     });
   });
 
-  // Add test for task metrics
+  //
+  // ─────────────────────────────────────────────────────────────────
+  //   GET /tasks/metrics -> getTaskMetrics
+  // ─────────────────────────────────────────────────────────────────
+  //
   describe("GET /tasks/metrics", () => {
     it("should return task metrics for the user", async () => {
       User.findOne.mockImplementation(() => ({
@@ -545,6 +583,20 @@ describe("Task API Endpoints", () => {
 
       expect(response.status).toBe(404);
       expect(response.body.message).toBe("No user found for provided email");
+    });
+
+    it("should handle errors during metrics retrieval", async () => {
+      // Mock User.findOne to throw an error
+      User.findOne.mockImplementation(() => ({
+        lean: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockRejectedValue(new Error("Database error")),
+      }));
+
+      const response = await request(app).get("/tasks/metrics");
+
+      // Assert error is handled properly
+      expect(response.status).toBe(500);
+      expect(response.body.message).toContain("Error retrieving task metrics");
     });
   });
 });
