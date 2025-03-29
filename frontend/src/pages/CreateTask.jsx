@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { toast } from "react-toastify";
 import {
   FaTasks,
   FaCalendarAlt,
@@ -28,6 +27,7 @@ import {
   MAX_DESCRIPTION_LENGTH, 
   getCharacterCountColor 
 } from "../utils/formValidation";
+import { showSuccessToast, showErrorToast } from "../utils/toastUtils";
 
 const CreateTask = ({ isModal = false, onClose }) => {
   const navigate = useNavigate();
@@ -140,15 +140,8 @@ const CreateTask = ({ isModal = false, onClose }) => {
       const result = await createTaskMutation(payload).unwrap();
       console.log("Task creation result:", result);
 
-      // Show success toast notification
-      toast.success("Task created successfully!", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      });
+      // Replace toast.success with our utility function
+      showSuccessToast("Task created successfully!");
 
       // Navigate based on return path or modal state
       if (isModal && onClose) {
@@ -158,18 +151,8 @@ const CreateTask = ({ isModal = false, onClose }) => {
       }
     } catch (err) {
       console.error("Task creation error:", err);
-      // Show error toast notification
-      toast.error(
-        err?.data?.message || "Failed to create task. Please try again.",
-        {
-          position: "top-right",
-          autoClose: 5000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-        }
-      );
+      // Replace toast.error with our utility function
+      showErrorToast(err);
 
       // Update form errors for display
       setFormErrors({
