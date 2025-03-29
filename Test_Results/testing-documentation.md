@@ -11,7 +11,7 @@ The backend testing uses Jest and Supertest to implement integration tests for t
 Tests are organized by feature area in the `__tests__` directory:
 
 - `admin.tasks.test.js` - Admin task management endpoints
-- `admin.users.test.js` - Admin user management endpoints  
+- `admin.users.test.js` - Admin user management endpoints
 - `auth.test.js` - Authentication endpoints (login, register, refresh token)
 - `conversations.test.js` - Messaging and conversations
 - `tasks.test.js` - Task management endpoints
@@ -20,6 +20,7 @@ Tests are organized by feature area in the `__tests__` directory:
 ### Backend Test Components
 
 1. **Mock Implementation**
+
    - The backend uses Jest mocks to replace database models and external services
    - Mock files are located in `__mocks__/` directory
    - Key mock components include:
@@ -29,7 +30,6 @@ Tests are organized by feature area in the `__tests__` directory:
 2. **Test Setup**
    - Tests use a custom Jest setup file (`jest.setup.js`) that configures mongoose mocks
    - Each test file has proper setup
-
 
 ### Running Backend Tests
 
@@ -42,9 +42,14 @@ cd backend
 # Run all tests
 npm test
 
+# Run all tests and generate a coverage report
+npm test -- --coverage
+
 # Run a specific test file
 npm test -- __tests__/auth.test.js
 ```
+
+A coverage report can be seen in the terminal or in the `coverage/` folder created locally when a user runs `npm test -- --coverage`
 
 ## Frontend Testing
 
@@ -61,6 +66,7 @@ Tests are organized to mirror the structure of the source code in the `src/__tes
 ### Frontend Test Components
 
 1. **Mock Implementation**
+
    - The frontend uses Vitest mocks for external dependencies
    - Mock files are located in `src/__mocks__/` directory
    - Common mocked elements include:
@@ -73,7 +79,6 @@ Tests are organized to mirror the structure of the source code in the `src/__tes
    - Vitest for test execution and assertions
    - Custom test utilities in `src/__tests__/utils/test-utils.jsx`
 
-
 ### Running Frontend Tests
 
 To run the frontend tests:
@@ -84,29 +89,14 @@ cd frontend
 
 # Run all tests
 npm test
+
+# Run all tests and generate a coverage report
+npm test -- --coverage
+
+# Run a specific test file
+npm test -- path_to_file
 ```
 
-The coverage report will be generated in the `test-results/coverage` directory.
+Note:
 
-## Test Results Screenshots
-
-### Frontend Tests Screenshot
-![](./Screenshot%202025-03-16%20at%206.26.12 AM.png)
-
-
-### Backend Tests Screenshot
-
-![](./Screenshot%202025-03-16%20at%206.24.47 AM.png)
-
-![](./Screenshot%202025-03-16%20at%206.24.29 AM.png)
-
-![](./Screenshot%202025-03-16%20at%206.24.38 AM.png)
-
-
-![](./Screenshot%202025-03-16%20at%206.24.19 AM.png)
-
-
-
-
-
-
+Frontend Tests are minimal since we only test pure js functionality like state management and API handling
