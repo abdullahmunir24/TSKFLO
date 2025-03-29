@@ -29,6 +29,7 @@ import AdminUsers from "./pages/admin/AdminUsers";
 // Public pages
 import HomePage from "./pages/public/HomePage";
 import LoginPage from "./pages/public/LoginPage";
+import RegisterPage from "./pages/public/RegisterPage";
 import AboutPage from "./pages/public/AboutPage";
 
 // common page
