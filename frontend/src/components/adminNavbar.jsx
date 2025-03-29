@@ -13,9 +13,9 @@ import { useSelector } from "react-redux";
 import { selectCurrentUserName } from "../features/auth/authSlice";
 import { useGetMyDataQuery } from "../features/user/userApiSlice";
 import { useNotification } from "../context/NotificationContext";
-// Import our new components
+// Import components
 import NavLink from "./navigation/NavLink";
-import DarkModeToggle from "./navigation/DarkModeToggle";
+import DarkModeToggle from "./DarkModeToggle"; // Updated import path
 import UserMenu from "./navigation/UserMenu";
 
 const AdminNavbar = () => {

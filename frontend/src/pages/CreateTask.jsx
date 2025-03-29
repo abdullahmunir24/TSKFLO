@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { toast } from "react-toastify";
 import {
   FaTasks,
   FaCalendarAlt,
@@ -22,10 +21,13 @@ import {
 import { useSearchUsersQuery } from "../features/user/userApiSlice";
 import { useSelector } from "react-redux";
 import { selectCurrentUserId } from "../features/auth/authSlice";
-
-// Maximum length constants
-const MAX_TITLE_LENGTH = 100;
-const MAX_DESCRIPTION_LENGTH = 500;
+import { 
+  validateTaskForm, 
+  MAX_TITLE_LENGTH, 
+  MAX_DESCRIPTION_LENGTH, 
+  getCharacterCountColor 
+} from "../utils/formValidation";
+import { showSuccessToast, showErrorToast } from "../utils/toastUtils";
 
 const CreateTask = ({ isModal = false, onClose }) => {
   const navigate = useNavigate();
@@ -49,11 +51,9 @@ const CreateTask = ({ isModal = false, onClose }) => {
     // Check for redirectTo query parameter
     const queryParams = new URLSearchParams(location.search);
     const redirectTo = queryParams.get("redirectTo");
-
     if (redirectTo) {
       return redirectTo;
     }
-
     // Default fallback based on current path
     return location.pathname.includes("/admin")
       ? "/admin/dashboard"
@@ -84,7 +84,6 @@ const CreateTask = ({ isModal = false, onClose }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-
     if (formErrors[name]) {
       setFormErrors((prev) => ({ ...prev, [name]: "" }));
     }
@@ -97,7 +96,6 @@ const CreateTask = ({ isModal = false, onClose }) => {
         assignees: [...prev.assignees, user],
       }));
     }
-
     setAssigneeQuery("");
     setShowAssigneeDropdown(false);
   };
@@ -121,11 +119,8 @@ const CreateTask = ({ isModal = false, onClose }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Basic validation
-    const errors = {};
-    if (!formData.title.trim()) errors.title = "Title is required";
-    if (!formData.dueDate) errors.dueDate = "Due date is required";
-
+    // Validate form using shared validation utility
+    const errors = validateTaskForm(formData);
     setFormErrors(errors);
     if (Object.keys(errors).length > 0) return;
 
@@ -145,15 +140,8 @@ const CreateTask = ({ isModal = false, onClose }) => {
       const result = await createTaskMutation(payload).unwrap();
       console.log("Task creation result:", result);
 
-      // Show success toast notification
-      toast.success("Task created successfully!", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      });
+      // Replace toast.success with our utility function
+      showSuccessToast("Task created successfully!");
 
       // Navigate based on return path or modal state
       if (isModal && onClose) {
@@ -163,18 +151,8 @@ const CreateTask = ({ isModal = false, onClose }) => {
       }
     } catch (err) {
       console.error("Task creation error:", err);
-      // Show error toast notification
-      toast.error(
-        err?.data?.message || "Failed to create task. Please try again.",
-        {
-          position: "top-right",
-          autoClose: 5000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-        }
-      );
+      // Replace toast.error with our utility function
+      showErrorToast(err);
 
       // Update form errors for display
       setFormErrors({
@@ -183,13 +161,6 @@ const CreateTask = ({ isModal = false, onClose }) => {
           err?.data?.message || "Failed to create task. Please try again.",
       });
     }
-  };
-
-  const getCharacterCountColor = (current, max) => {
-    const percentage = (current / max) * 100;
-    if (percentage < 70) return "text-success-600 dark:text-success-400";
-    if (percentage < 90) return "text-warning-600 dark:text-warning-400";
-    return "text-danger-600 dark:text-danger-400";
   };
 
   return (

@@ -13,3 +13,4 @@ node_modules
 backend/logs/errors.log
 .qodo
 coverage/
+.env
