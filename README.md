@@ -152,7 +152,7 @@ task-management/
 
 ## Test Results
 
-The application has been thoroughly tested with comprehensive unit tests. The test coverage report is available [here](Test_Results/coverageResults). For additional testing information and methodology please refer to our [testing documentation](testing-documentation.md).
+The application has been thoroughly tested with comprehensive unit tests. The test coverage report is available [here](Test_Results/coverageResults). For additional testing information and methodology please refer to our [testing documentation](Test_Results/testing-documentation.md).
 
 ## License
 
