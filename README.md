@@ -1,17 +1,20 @@
 # Task Management System
 
 ## Overview
+
 A comprehensive task management system designed for team collaboration, with role-based access control, task tracking, and real-time communication features. The system provides a secure and efficient way for teams to organize, assign, and monitor tasks.
 
 ## Features
 
 ### User Authentication and Role-Based Access Control (100% Complete)
+
 - Secure login and logout functionality with JWT-based authentication
 - Role-based access control with admin and user roles
 - Admin user management (create, update, delete users)
 - Admin ability to lock tasks to prevent further changes
 
 ### Task Management (100% Complete)
+
 - Comprehensive task creation and management
 - Tasks include title, description, priority, due date, status, and assignee(s)
 - Multiple assignees per task
@@ -19,10 +22,12 @@ A comprehensive task management system designed for team collaboration, with rol
 - Task notifications for team members
 
 ### Team Communication (100% Complete)
+
 - Live messaging functionality for team collaboration
 - Real-time notifications for task assignments and updates
 
 ### Admin Dashboard (100% Complete)
+
 - Metrics and analytics for task progress tracking
 - User management interface
 - System-wide task monitoring
@@ -30,6 +35,7 @@ A comprehensive task management system designed for team collaboration, with rol
 ## Technologies Used
 
 ### Backend
+
 - Node.js with Express.js
 - MongoDB with Mongoose
 - JWT for authentication
@@ -38,6 +44,7 @@ A comprehensive task management system designed for team collaboration, with rol
 - Jest for testing
 
 ### Frontend
+
 - React.js with React Router
 - Redux for state management
 - Tailwind CSS for styling
@@ -48,20 +55,24 @@ A comprehensive task management system designed for team collaboration, with rol
 ## Implementation Patterns
 
 ### Design Patterns
+
 1. **Observer Pattern**: Implemented in the notification system and socket connections to provide real-time updates.
 2. **Factory Pattern**: Used for standardized object creation in tasks, users, and API requests.
 
 ### Architectural Pattern
+
 - **Layered Architecture**: Clear separation between presentation (frontend), business logic (controllers), and data access (models) layers.
 
 ## Installation and Setup
 
 ### Prerequisites
+
 - Node.js (v16+)
 - MongoDB (v4+)
 - npm or yarn
 
 ### Backend Setup
+
 ```bash
 # Navigate to backend directory
 cd backend
@@ -83,6 +94,7 @@ npm run dev
 ```
 
 ### Frontend Setup
+
 ```bash
 # Navigate to frontend directory
 cd frontend
@@ -97,6 +109,7 @@ npm run dev
 ## Usage
 
 ### Admin Functions
+
 - Manage users (create, update, delete)
 - Assign tasks to team members
 - Lock tasks to prevent further changes
@@ -104,6 +117,7 @@ npm run dev
 - Search tasks by various criteria
 
 ### Team Member Functions
+
 - Create, update, and view tasks
 - Assign tasks to other team members
 - Search tasks using multiple criteria
@@ -136,5 +150,10 @@ task-management/
 │   │   └── routes/     # Application routing
 ```
 
+## Test Results
+
+The application has been thoroughly tested with comprehensive unit tests. The test coverage report is available [here](Test_Results/coverageResults). For additional testing information and methodology please refer to our [testing documentation](testing-documentation.md).
+
 ## License
-This project is licensed under the MIT License. 
+
+This project is licensed under the MIT License.
