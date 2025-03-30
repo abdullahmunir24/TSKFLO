@@ -2,7 +2,10 @@ process.env.NODE_ENV = "test";
 const request = require("supertest");
 const app = require("../app"); // your Express app
 const Task = require("../models/Task");
+const User = require("../models/User");
+const adminController = require("../controllers/adminController");
 jest.mock("../models/Task");
+jest.mock("../models/User");
 jest.mock("../utils/emailTransporter"); // if you have the same mock
 const logger = require("../logs/logger");
 
@@ -168,10 +171,9 @@ describe("Admin Task Endpoints", () => {
   //
   describe("PATCH /admin/tasks/:taskId", () => {
     it("should return 404 if no task exists", async () => {
-      // Mock exactly what the controller calls: findOneAndUpdate().lean()
-      Task.findOneAndUpdate = jest.fn().mockReturnValue({
-        // The lean() function should resolve to null for this test
-        lean: jest.fn().mockResolvedValue(null),
+      // Setup mock to return null (no task found)
+      Task.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null),
       });
 
       const res = await request(app)
@@ -186,10 +188,15 @@ describe("Admin Task Endpoints", () => {
     it("should update the task and return it", async () => {
       const updatedTask = { ...mockTask, title: "Updated Title" };
 
-      // Mock exactly what the controller calls: findOneAndUpdate().lean()
-      Task.findOneAndUpdate = jest.fn().mockReturnValue({
-        // The lean() function should resolve to the updated task
-        lean: jest.fn().mockResolvedValue(updatedTask),
+      // Create a mock task object with a save method
+      const taskWithSave = {
+        ...mockTask,
+        save: jest.fn().mockResolvedValue(updatedTask),
+      };
+
+      // Mock findOne to return our task with save method
+      Task.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(taskWithSave),
       });
 
       const res = await request(app)
@@ -227,6 +234,306 @@ describe("Admin Task Endpoints", () => {
 
       const res = await request(app).delete(`/admin/tasks/${mockTask._id}`);
       expect(res.status).toBe(200);
+    });
+  });
+
+  //
+  // ─────────────────────────────────────────────────────────────────
+  //   PATCH /admin/tasks/:taskId/lock -> lockTask
+  // ─────────────────────────────────────────────────────────────────
+  //
+  describe("PATCH /admin/tasks/:taskId/lock", () => {
+    let req, res, next;
+
+    beforeEach(() => {
+      req = {
+        user: { id: "admin123", role: "admin" },
+        params: { taskId: "task123" },
+        body: {},
+      };
+      res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+        sendStatus: jest.fn(),
+      };
+      next = jest.fn();
+    });
+
+    it("should lock a task successfully", async () => {
+      // Arrange - Mock the findOneAndUpdate method used in the controller
+      const mockUpdatedTask = {
+        _id: "task123",
+        title: "Test Task",
+        locked: true,
+      };
+
+      // Setup mock correctly for the implementation in the controller
+      Task.findOneAndUpdate = jest.fn().mockReturnValue({
+        lean: jest.fn().mockReturnValue(mockUpdatedTask),
+      });
+
+      // Act
+      await adminController.lockTask(req, res, next);
+
+      // Assert
+      expect(Task.findOneAndUpdate).toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          _id: "task123",
+          locked: true,
+        })
+      );
+    });
+
+    it("should return 404 when task not found for locking", async () => {
+      // Arrange - Task not found
+      Task.findOneAndUpdate = jest.fn().mockReturnValue({
+        lean: jest.fn().mockReturnValue(null),
+      });
+
+      // Act
+      await adminController.lockTask(req, res, next);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "No such task exists",
+        })
+      );
+    });
+  });
+
+  //
+  // ─────────────────────────────────────────────────────────────────
+  //   PATCH /admin/tasks/:taskId/unlock -> unlockTask
+  // ─────────────────────────────────────────────────────────────────
+  //
+  describe("PATCH /admin/tasks/:taskId/unlock", () => {
+    let req, res, next;
+
+    beforeEach(() => {
+      req = {
+        user: { id: "admin123", role: "admin" },
+        params: { taskId: "task123" },
+        body: {},
+      };
+      res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+        sendStatus: jest.fn(),
+      };
+      next = jest.fn();
+    });
+
+    it("should unlock a task successfully", async () => {
+      // Arrange - Mock the findOneAndUpdate method
+      const mockUpdatedTask = {
+        _id: "task123",
+        title: "Test Task",
+        locked: false,
+      };
+
+      Task.findOneAndUpdate = jest.fn().mockReturnValue({
+        lean: jest.fn().mockReturnValue(mockUpdatedTask),
+      });
+
+      // Act
+      await adminController.unlockTask(req, res, next);
+
+      // Assert
+      expect(Task.findOneAndUpdate).toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          _id: "task123",
+          locked: false,
+        })
+      );
+    });
+
+    it("should return 404 when task not found for unlocking", async () => {
+      // Arrange - Task not found
+      Task.findOneAndUpdate = jest.fn().mockReturnValue({
+        lean: jest.fn().mockReturnValue(null),
+      });
+
+      // Act
+      await adminController.unlockTask(req, res, next);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "No such task exists",
+        })
+      );
+    });
+  });
+
+  //
+  // ─────────────────────────────────────────────────────────────────
+  //   PATCH /admin/tasks/:taskId/assignees -> addAssignee
+  // ─────────────────────────────────────────────────────────────────
+  //
+  describe("PATCH /admin/tasks/:taskId/assignees", () => {
+    let req, res, next;
+
+    beforeEach(() => {
+      req = {
+        user: { id: "admin123", role: "admin" },
+        params: { taskId: "task123" },
+        body: { assigneeId: "user123" },
+      };
+      res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+        sendStatus: jest.fn(),
+      };
+      next = jest.fn();
+    });
+
+    it("should add an assignee successfully", async () => {
+      // Arrange
+      const mockUser = {
+        _id: "user123",
+        name: "John Doe",
+        email: "john@example.com",
+      };
+
+      const mockTask = {
+        _id: "task123",
+        title: "Test Task",
+        assignees: ["existingUser"],
+        save: jest.fn().mockResolvedValue({
+          _id: "task123",
+          title: "Test Task",
+          assignees: ["existingUser", "user123"],
+        }),
+      };
+
+      // Set up the mocks to match the controller's expectations
+      User.findById = jest.fn().mockReturnValue({
+        lean: jest.fn().mockReturnValue(mockUser),
+      });
+
+      Task.findOne = jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockTask),
+      });
+
+      // Act
+      await adminController.addAssignee(req, res, next);
+
+      // Assert
+      expect(mockTask.save).toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Assignee added successfully",
+          task: expect.any(Object),
+        })
+      );
+    });
+
+    it("should return 204 if user is already an assignee", async () => {
+      // Arrange - User is already assigned
+      const mockUser = {
+        _id: "user123",
+        name: "John Doe",
+      };
+
+      const mockTask = {
+        _id: "task123",
+        title: "Test Task",
+        assignees: ["user123"],
+      };
+
+      User.findById = jest.fn().mockReturnValue({
+        lean: jest.fn().mockReturnValue(mockUser),
+      });
+
+      Task.findOne = jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockTask),
+      });
+
+      // Act
+      await adminController.addAssignee(req, res, next);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(204);
+    });
+  });
+
+  //
+  // ─────────────────────────────────────────────────────────────────
+  //   DELETE /admin/tasks/:taskId/assignees -> removeAssignee
+  // ─────────────────────────────────────────────────────────────────
+  //
+  describe("DELETE /admin/tasks/:taskId/assignees", () => {
+    let req, res, next;
+
+    beforeEach(() => {
+      req = {
+        user: { id: "admin123", role: "admin" },
+        params: { taskId: "task123" },
+        body: { assigneeId: "user123" },
+      };
+      res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+        sendStatus: jest.fn(),
+      };
+      next = jest.fn();
+    });
+
+    it("should remove an assignee successfully", async () => {
+      // Arrange
+      const mockTask = {
+        _id: "task123",
+        title: "Test Task",
+        assignees: ["user123", "user456"],
+        save: jest.fn().mockResolvedValue({
+          _id: "task123",
+          title: "Test Task",
+          assignees: ["user456"],
+        }),
+      };
+
+      Task.findOne = jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockTask),
+      });
+
+      // Act
+      await adminController.removeAssignee(req, res, next);
+
+      // Assert
+      expect(mockTask.save).toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Assignee removed successfully",
+          task: expect.any(Object),
+        })
+      );
+    });
+
+    it("should return 404 if task not found", async () => {
+      // Arrange - Task not found
+      Task.findOne = jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null),
+      });
+
+      // Act
+      await adminController.removeAssignee(req, res, next);
+
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Task not found or you do not have permission",
+        })
+      );
     });
   });
 });

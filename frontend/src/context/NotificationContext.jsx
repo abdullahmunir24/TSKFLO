@@ -12,7 +12,7 @@ import {
   selectCurrentUserId,
 } from "../features/auth/authSlice";
 import { useGetAllConversationsQuery } from "../features/messages/messageApiSlice";
-import { toast } from "react-toastify";
+import { showCustomToast } from "../utils/toastUtils";
 import { useLocation } from "react-router-dom";
 
 const NotificationContext = createContext();
@@ -25,6 +25,7 @@ export const NotificationProvider = ({ children }) => {
   const token = useSelector(selectCurrentToken);
   const currentUserId = useSelector(selectCurrentUserId);
   const socket = getSocket();
+  const joinedConversations = useRef(new Set());
   const location = useLocation();
   const { data: conversations } = useGetAllConversationsQuery(undefined, {
     skip: !token,
@@ -83,16 +84,14 @@ export const NotificationProvider = ({ children }) => {
           return updated;
         });
 
-        // Show toast notification with more prominent styling
-        toast.info(<div>New message from {message.sender.name}</div>, {
-          position: "top-right",
-          autoClose: 5000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          className: "notification-toast",
-        });
+        // Show toast notification with more prominent styling using the new utility
+        showCustomToast(
+          <div>New message from {message.sender.name}</div>,
+          "info",
+          {
+            className: "notification-toast",
+          }
+        );
       }
     };
 
@@ -105,15 +104,33 @@ export const NotificationProvider = ({ children }) => {
   }, [socket, currentUserId, location.pathname]);
 
   useEffect(() => {
-    if (socket && token && conversations) {
-      // Join all conversation rooms at app initialization
-      conversations.forEach((conversation) => {
-        console.log(`joined room for conversation: ${conversation._id}`);
-        socket.emit("joinConversation", conversation._id);
-      });
-    }
+    if (!socket || !token || !conversations) return;
 
-    // No cleanup function that leaves rooms
+    // Join any new conversations not already joined
+    conversations.forEach((conversation) => {
+      if (!joinedConversations.current.has(conversation._id)) {
+        socket.emit("joinConversation", conversation._id);
+        joinedConversations.current.add(conversation._id);
+        console.log(`Joined room for conversation: ${conversation._id}`);
+      }
+    });
+
+    // Handle reconnection's
+    const handleConnect = () => {
+      console.log("Socket reconnected - rejoining rooms");
+      // On reconnection, clear and rejoin all rooms
+      joinedConversations.current.clear();
+      conversations.forEach((conversation) => {
+        socket.emit("joinConversation", conversation._id);
+        joinedConversations.current.add(conversation._id);
+      });
+    };
+
+    socket.on("connect", handleConnect);
+
+    return () => {
+      socket.off("connect", handleConnect);
+    };
   }, [socket, token, conversations]);
 
   const value = {

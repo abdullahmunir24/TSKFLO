@@ -3,12 +3,21 @@ const app = require("../app");
 const Conversation = require("../models/Conversation");
 const Message = require("../models/Message");
 const logger = require("../logs/logger");
+const conversationsController = require("../controllers/conversationsController");
 
 process.env.NODE_ENV = "test";
 
-// Mock the models
+// Mock the models and middleware
 jest.mock("../models/Conversation");
 jest.mock("../models/Message");
+jest.mock("../middleware/verifyJWT", () => ({
+  verifyJWT: (req, res, next) => {
+    // Set user directly on the request object
+    req.user = { id: "67acb6c00a79cee04957d04b" };
+    next();
+  },
+  verifyAdmin: jest.fn((req, res, next) => next()),
+}));
 
 // Mock data
 const mockUserId = "67acb6c00a79cee04957d04b";
@@ -303,6 +312,218 @@ describe("Conversation Endpoints", () => {
 
       expect(res.status).toBe(403);
       expect(res.body.message).toMatch(/Not authorized to post messages/);
+    });
+  });
+
+  //
+  // ─────────────────────────────────────────────────────────────────
+  //   DELETE /:conversationId/delete -> deleteConversation
+  // ─────────────────────────────────────────────────────────────────
+  //
+  describe("DELETE /:conversationId/delete", () => {
+    it("should delete a conversation successfully", async () => {
+      // Mock findById to return a conversation with populated participants
+      const populatedMockConversation = {
+        ...mockConversation,
+        participants: [{ _id: mockUserId }, { _id: mockOtherUserId }],
+      };
+
+      // Use the proper method chain pattern from your codebase
+      Conversation.findById.mockImplementation(() => ({
+        populate: jest.fn().mockImplementation(() => ({
+          lean: jest.fn().mockImplementation(() => ({
+            exec: jest.fn().mockResolvedValue(populatedMockConversation),
+          })),
+        })),
+      }));
+
+      // Mock the correct deleteOne method with proper response
+      Conversation.deleteOne = jest.fn().mockImplementation(() => ({
+        exec: jest.fn().mockResolvedValue({ deletedCount: 1 }),
+      }));
+
+      Message.deleteMany = jest.fn().mockImplementation(() => ({
+        exec: jest.fn().mockResolvedValue({ deletedCount: 2 }),
+      }));
+
+      const res = await request(app).delete(
+        `/conversations/${mockConversation._id}/delete`
+      );
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty("message");
+      expect(Conversation.deleteOne).toHaveBeenCalled();
+      expect(Message.deleteMany).toHaveBeenCalled();
+    });
+
+    it("should return 404 if conversation doesn't exist", async () => {
+      // Mock finding no conversation
+      Conversation.findById.mockImplementation(() => ({
+        populate: jest.fn().mockImplementation(() => ({
+          lean: jest.fn().mockImplementation(() => ({
+            exec: jest.fn().mockResolvedValue(null),
+          })),
+        })),
+      }));
+
+      const res = await request(app).delete(
+        "/conversations/nonexistentid/delete"
+      );
+
+      expect(res.status).toBe(404);
+      expect(res.body.message).toMatch(/Conversation not found/);
+    });
+
+    it("should return 403 if user is not a participant", async () => {
+      // Mock finding a conversation where the user isn't a participant
+      const nonMemberConversation = {
+        ...mockConversation,
+        participants: [{ _id: "someOtherId" }, { _id: "anotherUserId" }],
+      };
+
+      Conversation.findById.mockImplementation(() => ({
+        populate: jest.fn().mockImplementation(() => ({
+          lean: jest.fn().mockImplementation(() => ({
+            exec: jest.fn().mockResolvedValue(nonMemberConversation),
+          })),
+        })),
+      }));
+
+      const res = await request(app).delete(
+        `/conversations/${mockConversation._id}/delete`
+      );
+
+      expect(res.status).toBe(403);
+      expect(res.body.message).toMatch(/Not authorized/i);
+    });
+  });
+
+  //
+  // ─────────────────────────────────────────────────────────────────
+  //   Direct Controller Tests
+  // ─────────────────────────────────────────────────────────────────
+  //
+  describe("Conversation Controller Tests", () => {
+    let req, res, next;
+
+    beforeEach(() => {
+      req = {
+        user: { id: mockUserId },
+        params: { conversationId: "conv123" },
+        body: {},
+        app: {
+          get: jest.fn().mockReturnValue(mockSocketIo),
+        },
+      };
+      res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      };
+      next = jest.fn();
+    });
+
+    describe("DELETE /conversations/:conversationId/delete", () => {
+      it("should delete conversation and its messages successfully", async () => {
+        // Arrange a conversation where the user is a participant
+        const mockConversation = {
+          _id: "conv123",
+          participants: [
+            { _id: mockUserId, name: "Test User" },
+            { _id: "otherUser", name: "Other User" },
+          ],
+          groupName: "Test Group",
+        };
+
+        // Setup the proper findById chain
+        Conversation.findById = jest.fn().mockReturnValue({
+          populate: jest.fn().mockReturnThis(),
+          lean: jest.fn().mockReturnThis(),
+          exec: jest.fn().mockResolvedValue(mockConversation),
+        });
+
+        // Fix: Mock with chainable methods that match controller usage
+        Conversation.deleteOne = jest.fn().mockImplementation(() => ({
+          exec: jest.fn().mockResolvedValue({ deletedCount: 1 }),
+        }));
+        Message.deleteMany = jest.fn().mockImplementation(() => ({
+          exec: jest.fn().mockResolvedValue({ deletedCount: 5 }),
+        }));
+
+        // Act
+        await conversationsController.deleteConversation(req, res, next);
+
+        // Assert
+        expect(Conversation.findById).toHaveBeenCalledWith("conv123");
+        expect(Conversation.deleteOne).toHaveBeenCalled();
+        expect(Message.deleteMany).toHaveBeenCalled();
+        expect(res.status).toHaveBeenCalledWith(200);
+      });
+
+      it("should return 404 if conversation not found", async () => {
+        // Arrange
+        Conversation.findById = jest.fn().mockReturnValue({
+          populate: jest.fn().mockReturnThis(),
+          lean: jest.fn().mockReturnThis(),
+          exec: jest.fn().mockResolvedValue(null),
+        });
+
+        // Act
+        await conversationsController.deleteConversation(req, res, next);
+
+        // Assert
+        expect(res.status).toHaveBeenCalledWith(404);
+        expect(res.json).toHaveBeenCalled();
+      });
+
+      it("should return 403 if user is not a participant", async () => {
+        // Arrange
+        const mockConversation = {
+          _id: "conv123",
+          participants: [
+            { _id: "user1", name: "User 1" },
+            { _id: "user2", name: "User 2" },
+          ],
+          groupName: "Test Group",
+        };
+
+        Conversation.findById = jest.fn().mockReturnValue({
+          populate: jest.fn().mockReturnThis(),
+          lean: jest.fn().mockReturnThis(),
+          exec: jest.fn().mockResolvedValue(mockConversation),
+        });
+
+        // Act
+        await conversationsController.deleteConversation(req, res, next);
+
+        // Assert
+        expect(res.status).toHaveBeenCalledWith(403);
+        expect(res.json).toHaveBeenCalled();
+      });
+
+      it("should handle errors during conversation deletion", async () => {
+        // Arrange
+        const mockConversation = {
+          _id: "conv123",
+          participants: [{ _id: mockUserId }, { _id: "otherUser" }],
+          groupName: "Test Group",
+        };
+
+        Conversation.findById = jest.fn().mockReturnValue({
+          populate: jest.fn().mockReturnThis(),
+          lean: jest.fn().mockReturnThis(),
+          exec: jest.fn().mockResolvedValue(mockConversation),
+        });
+
+        Conversation.deleteOne = jest.fn().mockImplementation(() => {
+          throw new Error("Database error");
+        });
+
+        // Act
+        await conversationsController.deleteConversation(req, res, next);
+
+        // Assert
+        expect(next).toHaveBeenCalledWith(expect.any(Error));
+      });
     });
   });
 });

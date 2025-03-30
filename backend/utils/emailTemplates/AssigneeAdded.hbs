@@ -1,0 +1,24 @@
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Task Completed Notification</title>
+  </head>
+  <body>
+    <p>Hello {{name}},</p>
+    <p>The task
+      <strong>{{taskName}}</strong>
+      has been assigned to you by
+      {{adder}}.</p>
+
+    {{#if assignees}}
+      <p>Assignees:</p>
+      <ul>
+        {{#each assignees}}
+          <li>{{this}}</li>
+        {{/each}}
+      </ul>
+    {{/if}}
+
+    <p>Thank you for your attention!</p>
+  </body>
+</html>
