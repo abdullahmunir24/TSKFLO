@@ -1,20 +1,24 @@
 import React, { useState, useMemo, useEffect, useCallback } from "react";
-import { 
-  FaExclamationCircle, 
-  FaTimes, 
-  FaCopy, 
-  FaChevronLeft, 
-  FaChevronRight, 
-  FaSearch, 
-  FaFilter, 
-  FaChevronDown, 
-  FaChevronUp, 
-  FaPlus, 
-  FaEdit, 
-  FaTrash, 
-  FaSpinner 
+import {
+  FaExclamationCircle,
+  FaTimes,
+  FaCopy,
+  FaChevronLeft,
+  FaChevronRight,
+  FaSearch,
+  FaFilter,
+  FaChevronDown,
+  FaChevronUp,
+  FaPlus,
+  FaEdit,
+  FaTrash,
+  FaSpinner,
 } from "react-icons/fa";
-import { showSuccessToast, showErrorToast, showWarningToast } from "../../utils/toastUtils";
+import {
+  showSuccessToast,
+  showErrorToast,
+  showWarningToast,
+} from "../../utils/toastUtils";
 import Pagination from "../../components/Pagination";
 import ConfirmationModal from "../../components/ConfirmationModal";
 
@@ -114,15 +118,15 @@ const AdminUsers = () => {
       console.log("Deleting user with ID:", userToDelete);
       const result = await deleteUser(userToDelete).unwrap();
       console.log("Delete user response:", result);
-      
+
       // Always show success toast on successful deletion
       showSuccessToast(result?.message || "User deleted successfully");
       refetch();
     } catch (err) {
       console.error("Error deleting user:", err);
-      
+
       // Special case: If it's a parsing error but status is 200, it was actually successful
-      if (err?.status === 'PARSING_ERROR' && err?.originalStatus === 200) {
+      if (err?.status === "PARSING_ERROR" && err?.originalStatus === 200) {
         showSuccessToast("User deleted successfully");
         refetch();
       } else {
@@ -144,7 +148,7 @@ const AdminUsers = () => {
         setShowCreateUser(false);
       } else {
         const response = await inviteUser(newUser).unwrap();
-        
+
         // Handle already invited case
         if (response?.alreadyInvited) {
           showWarningToast(response.message || "User has already been invited");
@@ -480,7 +484,8 @@ const AdminUsers = () => {
                       {invitationLink}
                     </div>
                     <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                      Share this link with the user. The link will expire after they register.
+                      Share this link with the user. The link will expire after
+                      they register.
                     </p>
                   </div>
                 )}
