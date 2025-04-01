@@ -12,6 +12,7 @@ import {
   FaEyeSlash,
   FaArrowRight,
 } from "react-icons/fa";
+import { apiSlice } from "../../app/api/apiSlice";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -49,7 +50,9 @@ const LoginPage = () => {
     setErrors({});
 
     try {
-      console.log();
+      // Reset API state to clear any previous user data
+      dispatch(apiSlice.util.resetApiState());
+      
       // Call the RTK Query login mutation
       const { accessToken } = await login({ email, password }).unwrap();
 

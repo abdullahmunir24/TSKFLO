@@ -5,6 +5,7 @@ import { useDispatch } from "react-redux";
 import { logOut } from "../../features/auth/authSlice";
 import { useLogoutMutation } from "../../features/auth/authApiSlice";
 import UserProfilePopup from "../UserProfilePopup";
+import { apiSlice } from "../../app/api/apiSlice";
 
 /**
  * User menu component with profile popup and logout functionality
@@ -19,6 +20,9 @@ const UserMenu = ({ userName, userData, isUserLoading }) => {
     try {
       // First, manually dispatch the logout action to clear the Redux state
       dispatch(logOut());
+      
+      // Reset API state to clear all cached data
+      dispatch(apiSlice.util.resetApiState());
 
       // Then call the logout endpoint
       await logout().unwrap();
@@ -29,6 +33,10 @@ const UserMenu = ({ userName, userData, isUserLoading }) => {
       console.error("Logout failed:", error);
       // If the API call fails, we still want to log out locally
       dispatch(logOut());
+      
+      // Still reset API state to clear all cached data
+      dispatch(apiSlice.util.resetApiState());
+      
       navigate("/login", { replace: true });
     }
   };
