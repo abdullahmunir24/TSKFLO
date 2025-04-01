@@ -4,16 +4,32 @@
 
 A comprehensive task management system designed for team collaboration, with role-based access control, task tracking, and real-time communication features. The system provides a secure and efficient way for teams to organize, assign, and monitor tasks.
 
+## Screenshots
+
+Below are screenshots showcasing key features of the Task Management System:
+
+### Homepage
+![Homepage View](assets/images/homepage.png)
+
+### Admin Dashboard
+![Admin Dashboard](assets/images/admindashboard.png)
+
+### Task Dashboard
+![Task Dashboard](assets/images/taskdashboard.png)
+
+### Messaging Interface
+![Messaging UI](assets/images/messagingUI.png)
+
 ## Features
 
-### User Authentication and Role-Based Access Control (100% Complete)
+### User Authentication and Role-Based Access Control
 
 - Secure login and logout functionality with JWT-based authentication
 - Role-based access control with admin and user roles
 - Admin user management (create, update, delete users)
 - Admin ability to lock tasks to prevent further changes
 
-### Task Management (100% Complete)
+### Task Management
 
 - Comprehensive task creation and management
 - Tasks include title, description, priority, due date, status, and assignee(s)
@@ -21,12 +37,12 @@ A comprehensive task management system designed for team collaboration, with rol
 - Task search functionality with multiple criteria
 - Task notifications for team members
 
-### Team Communication (100% Complete)
+### Team Communication
 
 - Live messaging functionality for team collaboration
 - Real-time notifications for task assignments and updates
 
-### Admin Dashboard (100% Complete)
+### Admin Dashboard
 
 - Metrics and analytics for task progress tracking
 - User management interface
@@ -42,6 +58,7 @@ A comprehensive task management system designed for team collaboration, with rol
 - Socket.io for real-time features
 - Winston for logging
 - Jest for testing
+- Nodemailer for email notifications
 
 ### Frontend
 
@@ -70,6 +87,7 @@ A comprehensive task management system designed for team collaboration, with rol
 - Node.js (v16+)
 - MongoDB (v4+)
 - npm or yarn
+- Docker and Docker Compose (optional, for containerized setup)
 
 ### Backend Setup
 
@@ -105,6 +123,30 @@ npm install
 # Start the development server
 npm run dev
 ```
+
+### Docker Setup (Alternative)
+
+The application can also be run using Docker Compose:
+
+```bash
+# Start all services
+docker-compose up -d
+
+# Stop all services
+docker-compose down
+```
+
+## API Documentation
+
+The Task Management System provides a comprehensive REST API with the following key features:
+
+- JWT-based authentication
+- User management endpoints
+- Task CRUD operations
+- Team communication endpoints
+- Admin management interfaces
+
+For detailed API documentation including all endpoints, request/response formats, and authentication requirements, refer to the `deliverables' folder.
 
 ## Usage
 
@@ -148,11 +190,26 @@ task-management/
 │   │   ├── app/        # Redux store and app configuration
 │   │   ├── assets/     # Static assets
 │   │   └── routes/     # Application routing
+│
+├── deliverables/       # Project documentation and deliverables
+├── Test_Results/       # Test results and documentation
+│   ├── coverageResults/# Test coverage reports
+│   └── testing-documentation.md # Testing methodology
+├── docker-compose.yml  # Docker Compose configuration
+└── Dockerfile          # Docker configuration
 ```
 
 ## Test Results
 
-The application has been thoroughly tested with comprehensive unit tests. The test coverage report is available [here](Test_Results/coverageResults). For additional testing information and methodology please refer to our [testing documentation](Test_Results/testing-documentation.md).
+The application has been thoroughly tested with comprehensive unit tests. The test coverage report is available in the [Test_Results/coverageResults](Test_Results/coverageResults) directory. For additional testing information and methodology please refer to our [testing documentation](Test_Results/testing-documentation.md).
+
+## Deliverables
+
+Project documentation and deliverables are available in the `deliverables/` directory, including:
+- API documentation
+- User manuals
+- Technical specifications
+- Architecture diagrams
 
 ## License
 
