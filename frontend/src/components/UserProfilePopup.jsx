@@ -7,7 +7,12 @@ import {
 
 const UserProfilePopup = ({ onClose }) => {
   // Directly fetch user data with RTK Query
-  const { data: userData, isLoading, error } = useGetMyDataQuery();
+  const { data: userData, isLoading, error } = useGetMyDataQuery(undefined, {
+    // Force a refresh when the component mounts
+    refetchOnMountOrArgChange: true,
+    // Skip cache and always fetch fresh data
+    skip: false
+  });
 
   // Local state
   const [isEditing, setIsEditing] = useState(false);
@@ -26,6 +31,17 @@ const UserProfilePopup = ({ onClose }) => {
 
   // Get update mutation
   const [updateMyData, { isLoading: isUpdating }] = useUpdateMyDataMutation();
+
+  // Add scroll lock effect when popup is opened
+  useEffect(() => {
+    // Disable scrolling on mount
+    document.body.style.overflow = 'hidden';
+    
+    // Re-enable scrolling on unmount
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, []);
 
   // Initialize form data when user data changes - only once when data arrives
   useEffect(() => {

@@ -9,6 +9,9 @@ export const messageApiSlice = apiSlice.injectEndpoints({
         credentials: "include",
       }),
       providesTags: [{ type: "User" }],
+      keepUnusedDataFor: 5,
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
     }),
     updateMyData: builder.mutation({
       query: (updates) => ({
