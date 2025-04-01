@@ -22,6 +22,10 @@ export const adminApiSlice = createApi({
         params: {
           page: params.page || 1,
           limit: params.limit || 8,
+          search: params.search || "",
+          status: params.status || "",
+          priority: params.priority || "",
+          dueDate: params.dueDate || "",
         },
         credentials: "include",
       }),
@@ -84,19 +88,61 @@ export const adminApiSlice = createApi({
       },
     }),
     getAdminUsers: builder.query({
-      query: () => ({
+      query: (params = {}) => ({
         url: "/users",
         method: "GET",
+        params: {
+          page: params.page || 1,
+          limit: params.limit || 10,
+          search: params.search || "",
+          role: params.role || "",
+        },
         credentials: "include",
       }),
       providesTags: ["AdminUsers"],
       transformResponse: (response) => {
         console.log("Users Response:", response);
-        if (!response) return [];
-        if (Array.isArray(response)) return response;
-        if (response.users) return response.users;
-        if (response.data) return response.data;
-        return [];
+        if (!response)
+          return {
+            users: [],
+            pagination: { totalUsers: 0, currentPage: 1, totalPages: 1 },
+          };
+
+        if (response.users) {
+          return {
+            users: response.users,
+            pagination: {
+              totalUsers: response.totalUsers || 0,
+              currentPage: response.currentPage || 1,
+              totalPages: response.totalPages || 1,
+            },
+          };
+        }
+
+        if (Array.isArray(response))
+          return {
+            users: response,
+            pagination: {
+              totalUsers: response.length,
+              currentPage: 1,
+              totalPages: 1,
+            },
+          };
+
+        if (response.data)
+          return {
+            users: response.data,
+            pagination: {
+              totalUsers: response.data.length,
+              currentPage: 1,
+              totalPages: 1,
+            },
+          };
+
+        return {
+          users: [],
+          pagination: { totalUsers: 0, currentPage: 1, totalPages: 1 },
+        };
       },
       transformErrorResponse: (response) => {
         console.error("Users Error:", response);
