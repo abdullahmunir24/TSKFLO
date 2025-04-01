@@ -383,7 +383,11 @@ const UserDashboard = () => {
               tasks
             </p>
             <Link
-              to={location.pathname.includes("/admin") ? "/admin/createTask?redirectTo=/admin/dashboard" : "/createTask?redirectTo=/dashboard"}
+              to={
+                location.pathname.includes("/admin")
+                  ? "/admin/createTask?redirectTo=/admin/dashboard"
+                  : "/createTask?redirectTo=/dashboard"
+              }
               className="inline-flex items-center px-4 py-2 bg-white text-primary-700 rounded-lg font-medium hover:bg-primary-50 transition-all shadow-sm hover-lift"
             >
               <FaPlus className="mr-2" /> Create New Task
@@ -671,7 +675,11 @@ const UserDashboard = () => {
                     : "You don't have any tasks yet"}
                 </p>
                 <Link
-                  to={location.pathname.includes("/admin") ? "/admin/createTask?redirectTo=/admin/dashboard" : "/createTask?redirectTo=/dashboard"}
+                  to={
+                    location.pathname.includes("/admin")
+                      ? "/admin/createTask?redirectTo=/admin/dashboard"
+                      : "/createTask?redirectTo=/dashboard"
+                  }
                   className="inline-flex items-center px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg shadow-md hover:shadow-lg transition-all hover:-translate-y-1"
                 >
                   <FaPlus className="mr-2" /> Create New Task
@@ -806,13 +814,11 @@ const UserDashboard = () => {
 
                 {/* Pagination Controls */}
                 {totalPages > 1 && (
-                  <div className="mt-8 flex justify-center">
-                    <Pagination
-                      currentPage={currentPage}
-                      totalPages={totalPages}
-                      onPageChange={handlePageChange}
-                    />
-                  </div>
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={handlePageChange}
+                  />
                 )}
               </>
             )}

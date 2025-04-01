@@ -15,7 +15,7 @@ const { now } = require("mongoose");
 //@route GET /admin/users
 //@access Private
 const getAllUsers = asyncHandler(async (req, res) => {
-  let { page, limit, search } = req.query;
+  let { page, limit, search, role } = req.query;
 
   // Convert page and limit to numbers, and set defaults if not provided
   // Parse values
@@ -35,21 +35,26 @@ const getAllUsers = asyncHandler(async (req, res) => {
 
   const skip = (page - 1) * limit;
 
-  // Build search query if search parameter exists
+  // Build query with potential search and role filters
   let query = {};
+
+  // Add search filter if provided (search in name or email)
   if (search) {
-    query = {
-      $or: [
-        { name: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
-      ],
-    };
+    query.$or = [
+      { name: { $regex: search, $options: "i" } },
+      { email: { $regex: search, $options: "i" } },
+    ];
   }
 
-  // Fetch paginated users with search filter if provided
+  // Add role filter if provided
+  if (role) {
+    query.role = role;
+  }
+
+  // Fetch paginated users with filters
   const users = await User.find(query).skip(skip).limit(limit).lean().exec();
 
-  // Get total number of users matching the search criteria
+  // Get total number of users matching the criteria
   const totalUsers = await User.countDocuments(query);
 
   // Send response with pagination metadata
@@ -167,7 +172,7 @@ const deleteUser = asyncHandler(async (req, res) => {
 //@route GET /admin/tasks
 //@access Private
 const getAllTasks = asyncHandler(async (req, res) => {
-  let { page, limit } = req.query;
+  let { page, limit, search, status, priority, dueDate } = req.query;
 
   page = parseInt(page);
   limit = parseInt(limit);
@@ -186,21 +191,75 @@ const getAllTasks = asyncHandler(async (req, res) => {
   const skip = (page - 1) * limit;
 
   try {
-    // Get all tasks first
-    const query = Task.find();
+    // Build query with filters
+    let query = {};
+
+    // Add search filter if provided (search in title or description)
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    // Add status filter if provided
+    if (status) {
+      query.status = status;
+    }
+
+    // Add priority filter if provided
+    if (priority) {
+      query.priority = priority;
+    }
+
+    // Add due date filter if provided
+    if (dueDate) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      switch (dueDate) {
+        case "overdue":
+          query.dueDate = { $lt: today };
+          break;
+        case "today":
+          // Due date is today
+          const tomorrow = new Date(today);
+          tomorrow.setDate(today.getDate() + 1);
+          query.dueDate = {
+            $gte: today,
+            $lt: tomorrow,
+          };
+          break;
+        case "week":
+          // Due within the next 7 days
+          const nextWeek = new Date(today);
+          nextWeek.setDate(today.getDate() + 7);
+          query.dueDate = {
+            $gte: today,
+            $lte: nextWeek,
+          };
+          break;
+      }
+    }
+
+    // Get all tasks with filters
+    const taskQuery = Task.find(query);
+
     // Apply pagination
-    query.skip(skip);
-    query.limit(limit);
+    taskQuery.skip(skip);
+    taskQuery.limit(limit);
+
     // Apply population
-    query.populate("assignees", "_id name email");
+    taskQuery.populate("assignees", "_id name email");
+
     // Get as plain objects
-    query.lean();
+    taskQuery.lean();
 
     // Execute the query
-    const tasks = await query.exec();
+    const tasks = await taskQuery.exec();
 
-    // Get total count in a separate query
-    const totalTasks = await Task.countDocuments().exec();
+    // Get total count in a separate query with the same filters
+    const totalTasks = await Task.countDocuments(query).exec();
 
     // Send response with pagination metadata
     res.json({
