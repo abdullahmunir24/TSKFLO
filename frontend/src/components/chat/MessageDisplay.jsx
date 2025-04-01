@@ -32,21 +32,24 @@ const MessageDisplay = ({
         <div className="space-y-4">
           {messages?.map((message, index) => {
             const currentConversation = conversations?.find(
-              (c) => c._id === selectedConversation
+              (c) => c?._id === selectedConversation
             );
-            const isGroup = isGroupChat(currentConversation);
-            const isCurrentUser = message.sender._id === currentUserId;
+            const isGroup = isGroupChat
+              ? isGroupChat(currentConversation)
+              : false;
+            // Add optional chaining here to fix the null reference error
+            const isCurrentUser = message?.sender?._id === currentUserId;
             const showDate =
               index === 0 ||
-              new Date(message.createdAt).toDateString() !==
-                new Date(messages[index - 1].createdAt).toDateString();
+              new Date(message?.createdAt).toDateString() !==
+                new Date(messages[index - 1]?.createdAt).toDateString();
 
             return (
-              <div key={message._id}>
+              <div key={message?._id || index}>
                 {showDate && (
                   <div className="flex justify-center my-4">
                     <div className="bg-secondary-200 dark:bg-secondary-700 text-secondary-600 dark:text-secondary-400 text-xs px-3 py-1 rounded-full">
-                      {new Date(message.createdAt).toLocaleDateString([], {
+                      {new Date(message?.createdAt).toLocaleDateString([], {
                         weekday: "short",
                         month: "short",
                         day: "numeric",
@@ -61,9 +64,9 @@ const MessageDisplay = ({
                 >
                   <div className={`max-w-[75%] animate-slide-up`}>
                     {/* Show sender name only in group chats and not for current user's messages */}
-                    {isGroup && !isCurrentUser && (
+                    {isGroup && !isCurrentUser && message?.sender && (
                       <div className="text-xs text-secondary-500 dark:text-secondary-400 ml-2 mb-1">
-                        {message.sender.name}
+                        {message.sender.name || "Unknown User"}
                       </div>
                     )}
                     <div
@@ -73,7 +76,7 @@ const MessageDisplay = ({
                           : "bg-white dark:bg-secondary-800 text-secondary-900 dark:text-white rounded-bl-none"
                       }`}
                     >
-                      <p className="whitespace-pre-wrap">{message.text}</p>
+                      <p className="whitespace-pre-wrap">{message?.text}</p>
                       <div
                         className={`text-xs mt-1 text-right ${
                           isCurrentUser
@@ -81,7 +84,7 @@ const MessageDisplay = ({
                             : "text-secondary-500 dark:text-secondary-400"
                         }`}
                       >
-                        {new Date(message.createdAt).toLocaleTimeString([], {
+                        {new Date(message?.createdAt).toLocaleTimeString([], {
                           hour: "2-digit",
                           minute: "2-digit",
                         })}
@@ -99,4 +102,4 @@ const MessageDisplay = ({
   );
 };
 
-export default MessageDisplay; 
+export default MessageDisplay;
