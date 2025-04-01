@@ -194,6 +194,21 @@ export const adminApiSlice = createApi({
         url: `/tasks/${taskId}`,
         method: "DELETE",
         credentials: "include",
+        responseHandler: (response) => {
+          // For this specific endpoint, handle plain text "OK" response
+          if (response.status === 200) {
+            // Check if the response is text or already JSON
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+              return response.json();
+            } else {
+              // For non-JSON responses (like plain "OK"), return a success object
+              return { success: true, message: "Task deleted successfully" };
+            }
+          }
+          // For other status codes, attempt to parse as JSON
+          return response.json();
+        },
       }),
       invalidatesTags: ["AdminTasks", "Metrics"],
     }),
