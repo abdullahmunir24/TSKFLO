@@ -388,7 +388,7 @@ const AdminUsers = () => {
       {/* Create / Edit User Modal */}
       {showCreateUser && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm overflow-y-auto h-full w-full z-50 flex items-center justify-center">
-          <div className="relative mx-auto p-[40px] border shadow-xl rounded-xl bg-white dark:bg-secondary-800 animate-scale-in">
+          <div className="relative mx-auto p-[40px] border shadow-xl rounded-xl bg-white dark:bg-secondary-800 animate-scale-in w-full max-w-lg">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold text-secondary-900 dark:text-white">
                 <span className="bg-gradient-to-r from-primary-500 to-primary-700 bg-clip-text text-transparent">
@@ -408,56 +408,61 @@ const AdminUsers = () => {
 
             <form onSubmit={handleCreateOrUpdateUser}>
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
-                    Name
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={newUser.name}
-                    onChange={(e) =>
-                      setNewUser({ ...newUser, name: e.target.value })
-                    }
-                    required
-                    className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={newUser.email}
-                    onChange={(e) =>
-                      setNewUser({ ...newUser, email: e.target.value })
-                    }
-                    required
-                    className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
-                    Role
-                  </label>
-                  <select
-                    name="role"
-                    value={newUser.role}
-                    onChange={(e) =>
-                      setNewUser({ ...newUser, role: e.target.value })
-                    }
-                    className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all appearance-none"
-                  >
-                    <option value="user">User</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                </div>
+                {/* Show form fields for editing user or when no invitation link exists yet */}
+                {editingUser || !invitationLink ? (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
+                        Name
+                      </label>
+                      <input
+                        type="text"
+                        name="name"
+                        value={newUser.name}
+                        onChange={(e) =>
+                          setNewUser({ ...newUser, name: e.target.value })
+                        }
+                        required
+                        className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        name="email"
+                        value={newUser.email}
+                        onChange={(e) =>
+                          setNewUser({ ...newUser, email: e.target.value })
+                        }
+                        required
+                        className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-1">
+                        Role
+                      </label>
+                      <select
+                        name="role"
+                        value={newUser.role}
+                        onChange={(e) =>
+                          setNewUser({ ...newUser, role: e.target.value })
+                        }
+                        className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all appearance-none"
+                      >
+                        <option value="user">User</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                    </div>
+                  </>
+                ) : null}
 
-                {/* Invitation Link Display */}
-                {invitationLink && (
-                  <div className="mt-4 p-4 bg-gray-50 dark:bg-secondary-700 rounded-lg">
+                {/* Show invitation link box only when there's a link or we're not editing */}
+                {!editingUser && invitationLink && (
+                  <div className="p-4 bg-gray-50 dark:bg-secondary-700 rounded-lg">
                     <div className="flex justify-between items-center mb-2">
                       <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300">
                         Invitation Link
@@ -474,6 +479,9 @@ const AdminUsers = () => {
                     <div className="text-sm text-gray-600 dark:text-gray-300 break-all bg-white dark:bg-secondary-800 p-2 rounded border border-gray-200 dark:border-gray-600">
                       {invitationLink}
                     </div>
+                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                      Share this link with the user. The link will expire after they register.
+                    </p>
                   </div>
                 )}
 
@@ -486,14 +494,17 @@ const AdminUsers = () => {
                     }}
                     className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400"
                   >
-                    Cancel
+                    {invitationLink ? "Close" : "Cancel"}
                   </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm font-medium"
-                  >
-                    {editingUser ? "Update" : "Invite"}
-                  </button>
+                  {/* Only show submit button when not showing the invitation link */}
+                  {(editingUser || !invitationLink) && (
+                    <button
+                      type="submit"
+                      className="px-4 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm font-medium"
+                    >
+                      {editingUser ? "Update" : "Invite"}
+                    </button>
+                  )}
                 </div>
               </div>
             </form>
