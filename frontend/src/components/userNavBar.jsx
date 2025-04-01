@@ -195,10 +195,10 @@ const UserDashNavbar = () => {
               <button
                 onClick={handleLogout}
                 disabled={isLogoutLoading}
-                className="hidden md:flex items-center gap-1 text-sm font-medium text-secondary-700 dark:text-secondary-300 hover:text-danger-600 dark:hover:text-danger-400 transition-colors py-1.5 px-3 rounded-lg hover:bg-secondary-50 dark:hover:bg-secondary-800 h-8"
+                className="hidden md:flex items-center gap-1 text-sm font-medium text-secondary-700 dark:text-secondary-300 hover:text-danger-600 dark:hover:text-danger-400 transition-colors py-1.5 px-3 rounded-lg hover:bg-secondary-50 dark:hover:bg-secondary-800 h-8 group"
               >
-                <FaSignOutAlt className="h-3.5 w-3.5" />
-                <span>{isLogoutLoading ? "Logging out..." : "Logout"}</span>
+                <FaSignOutAlt className="h-3.5 w-3.5 text-secondary-700 dark:text-secondary-300 group-hover:text-danger-600 dark:group-hover:text-danger-400" />
+                <span className="text-secondary-700 dark:text-secondary-300 group-hover:text-danger-600 dark:group-hover:text-danger-400">{isLogoutLoading ? "Logging out..." : "Logout"}</span>
               </button>
             </div>
           </div>
@@ -253,8 +253,8 @@ const UserDashNavbar = () => {
             onClick={handleLogout}
             className="flex flex-col items-center px-4 py-1 text-secondary-600 dark:text-secondary-400"
           >
-            <FaSignOutAlt className="h-5 w-5" />
-            <span className="text-xs mt-1">Logout</span>
+            <FaSignOutAlt className="h-5 w-5 text-secondary-700 dark:text-secondary-400" />
+            <span className="text-xs mt-1 text-secondary-700 dark:text-secondary-400">Logout</span>
           </button>
         </div>
       </div>
