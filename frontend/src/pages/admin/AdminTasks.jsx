@@ -1,11 +1,9 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import {
   FaChevronDown,
   FaChevronUp,
   FaExclamationCircle,
   FaFilter,
-  FaChevronLeft,
-  FaChevronRight,
   FaTimes,
   FaSearch,
   FaEdit,
@@ -19,6 +17,9 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
+import Pagination from "../../components/Pagination"; // Add this import
+import ConfirmationModal from "../../components/ConfirmationModal";
+import { debounce } from "lodash";
 
 // Import your custom components - AdminCreateTask removed
 import {
@@ -228,7 +229,31 @@ const AdminTasks = () => {
   const [lockSuccess, setLockSuccess] = useState(false);
   const [lockError, setLockError] = useState(null);
 
-  // Queries
+  // State for delete confirmation modal
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState(null);
+
+  // Create a debounced search function
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const debouncedSearch = useCallback(
+    debounce((searchValue) => {
+      setSearchTerm(searchValue);
+      setCurrentPage(1); // Reset to first page when searching
+    }, 500), // 500ms delay
+    []
+  );
+
+  // Create query params object for API
+  const queryParams = {
+    page: currentPage,
+    limit: TASKS_PER_PAGE,
+    search: searchTerm,
+    status: filters.status,
+    priority: filters.priority,
+    dueDate: filters.dueDate,
+  };
+
+  // Queries with updated queryParams
   const {
     data: tasksData = {
       tasks: [],
@@ -238,7 +263,7 @@ const AdminTasks = () => {
     isError: isErrorTasks,
     error: tasksError,
     refetch: refetchTasks,
-  } = useGetAdminTasksQuery({ page: currentPage, limit: TASKS_PER_PAGE });
+  } = useGetAdminTasksQuery(queryParams);
 
   const [deleteTask, { isLoading: isDeleting }] = useDeleteAdminTaskMutation();
   const [updateTask, { isLoading: isUpdating }] = useUpdateAdminTaskMutation();
@@ -252,7 +277,7 @@ const AdminTasks = () => {
     totalPages: 1,
   };
 
-  // Handle sorting
+  // Handle sorting - now only sorts current page's data
   const handleSort = (key) => {
     setSortConfig((prev) => ({
       key,
@@ -260,110 +285,60 @@ const AdminTasks = () => {
     }));
   };
 
-  // Filter + search + sort
-  const sortedAndFilteredTasks = useMemo(() => {
-    if (!Array.isArray(tasks)) return [];
+  // Apply client-side sorting only (filtering/search now happens on server)
+  const sortedTasks = [...tasks];
+  if (sortConfig.key) {
+    sortedTasks.sort((a, b) => {
+      const aValue = a[sortConfig.key];
+      const bValue = b[sortConfig.key];
+      if (!aValue && !bValue) return 0;
+      if (!aValue) return 1;
+      if (!bValue) return -1;
+      if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
+      if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
+      return 0;
+    });
+  }
 
-    let filteredTasks = [...tasks];
+  // Handle search input change with debounce
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchTerm(value); // Update UI immediately
+    debouncedSearch(value); // Debounce the actual API call
+  };
 
-    // Apply filters
-    if (filters.status) {
-      filteredTasks = filteredTasks.filter((t) => t.status === filters.status);
-    }
-    if (filters.priority) {
-      filteredTasks = filteredTasks.filter(
-        (t) => t.priority === filters.priority
-      );
-    }
-    if (filters.assignee) {
-      filteredTasks = filteredTasks.filter(
-        (t) =>
-          Array.isArray(t.assignees) && t.assignees.includes(filters.assignee)
-      );
-    }
-    if (filters.dueDate) {
-      const today = new Date();
-      switch (filters.dueDate) {
-        case "overdue":
-          filteredTasks = filteredTasks.filter(
-            (t) => t.dueDate && new Date(t.dueDate) < today
-          );
-          break;
-        case "today":
-          filteredTasks = filteredTasks.filter((t) => {
-            if (!t.dueDate) return false;
-            const taskDate = new Date(t.dueDate);
-            return taskDate.toDateString() === today.toDateString();
-          });
-          break;
-        case "week":
-          const nextWeek = new Date(today);
-          nextWeek.setDate(today.getDate() + 7);
-          filteredTasks = filteredTasks.filter((t) => {
-            if (!t.dueDate) return false;
-            const taskDate = new Date(t.dueDate);
-            return taskDate >= today && taskDate <= nextWeek;
-          });
-          break;
-        default:
-          break;
-      }
-    }
+  // Handle filter changes
+  const handleFilterChange = (filterType, value) => {
+    setFilters((prev) => ({ ...prev, [filterType]: value }));
+    setCurrentPage(1); // Reset to first page when filtering
+  };
 
-    // Search
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      filteredTasks = filteredTasks.filter(
-        (t) =>
-          (t.title || "").toLowerCase().includes(term) ||
-          (t.description || "").toLowerCase().includes(term) ||
-          (Array.isArray(t.assignees) &&
-            t.assignees.some((assignee) =>
-              (assignee || "").toLowerCase().includes(term)
-            ))
-      );
-    }
-
-    // Sort
-    if (sortConfig.key) {
-      filteredTasks.sort((a, b) => {
-        const aValue = a[sortConfig.key];
-        const bValue = b[sortConfig.key];
-        if (!aValue && !bValue) return 0;
-        if (!aValue) return 1;
-        if (!bValue) return -1;
-        if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
-        if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
-        return 0;
-      });
-    }
-
-    return filteredTasks;
-  }, [tasks, filters, sortConfig, searchTerm]);
-
-  // unique values for filter dropdowns
-  const uniqueStatuses = useMemo(() => {
-    const st = [...new Set(tasks.map((t) => t.status))];
-    return st.filter(Boolean);
-  }, [tasks]);
-
-  const uniquePriorities = useMemo(() => {
-    const pr = [...new Set(tasks.map((t) => t.priority))];
-    return pr.filter(Boolean);
-  }, [tasks]);
-
-  const uniqueAssignees = useMemo(() => {
-    const asgn = [...new Set(tasks.flatMap((t) => t.assignees || []))];
-    return asgn.filter(Boolean);
-  }, [tasks]);
+  // Clear all filters
+  const clearFilters = () => {
+    setFilters({
+      status: "",
+      priority: "",
+      dueDate: "",
+    });
+    setSearchTerm("");
+    setCurrentPage(1);
+  };
 
   // Deleting tasks
-  const handleDeleteTask = async (taskId) => {
-    if (!window.confirm("Are you sure you want to delete this task?")) return;
-    setDeleteTaskId(taskId);
+  const handleDeleteConfirmation = (taskId) => {
+    setTaskToDelete(taskId);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteTask = async () => {
+    if (!taskToDelete) return;
+
+    setDeleteTaskId(taskToDelete);
     setDeleteError(null);
+    setShowDeleteModal(false);
+
     try {
-      await deleteTask(taskId).unwrap();
+      await deleteTask(taskToDelete).unwrap();
       setDeleteSuccess(true);
       setTimeout(() => {
         setDeleteSuccess(false);
@@ -384,6 +359,8 @@ const AdminTasks = () => {
         setDeleteTaskId(null);
       }, 3000);
     }
+
+    setTaskToDelete(null);
   };
 
   // Lock/unlock tasks
@@ -432,18 +409,6 @@ const AdminTasks = () => {
 
   return (
     <div className="max-w-7xl mx-auto">
-      {/* Title */}
-      <div className="glass-morphism rounded-xl shadow-sm p-6 mb-6 mt-6 border border-secondary-200 dark:border-secondary-700">
-        <h1 className="text-2xl font-bold text-secondary-900 dark:text-white flex items-center">
-          <span className="bg-gradient-to-r from-primary-500 to-primary-700 bg-clip-text text-transparent">
-            Task Management
-          </span>
-        </h1>
-        <p className="mt-1 text-sm text-secondary-500 dark:text-secondary-400">
-          Manage and monitor all tasks in the system
-        </p>
-      </div>
-
       {/* Errors */}
       {isErrorTasks && (
         <div
@@ -460,7 +425,7 @@ const AdminTasks = () => {
         </div>
       )}
 
-      {/* Controls */}
+      {/* Controls section already has the header integrated */}
       <div className="bg-gradient-to-br from-white to-primary-50/30 dark:from-secondary-800 dark:to-secondary-900 rounded-lg shadow-sm p-6 mb-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <div className="flex flex-col">
@@ -481,7 +446,7 @@ const AdminTasks = () => {
                 type="text"
                 placeholder="Search tasks..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={handleSearchChange}
                 className="w-full pl-10 pr-4 py-2 rounded-lg border border-secondary-200 dark:border-secondary-700 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 bg-white dark:bg-secondary-800 text-secondary-900 dark:text-white"
               />
             </div>
@@ -510,16 +475,14 @@ const AdminTasks = () => {
                       <select
                         value={filters.status}
                         onChange={(e) =>
-                          setFilters({ ...filters, status: e.target.value })
+                          handleFilterChange("status", e.target.value)
                         }
                         className="w-full rounded-lg border border-secondary-200 dark:border-secondary-700 py-2 px-3 bg-white dark:bg-secondary-800 text-secondary-900 dark:text-white"
                       >
                         <option value="">All Status</option>
-                        {uniqueStatuses.map((status) => (
-                          <option key={status} value={status}>
-                            {status}
-                          </option>
-                        ))}
+                        <option value="Incomplete">Incomplete</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Complete">Complete</option>
                       </select>
                     </div>
 
@@ -530,16 +493,14 @@ const AdminTasks = () => {
                       <select
                         value={filters.priority}
                         onChange={(e) =>
-                          setFilters({ ...filters, priority: e.target.value })
+                          handleFilterChange("priority", e.target.value)
                         }
                         className="w-full rounded-lg border border-secondary-200 dark:border-secondary-700 py-2 px-3 bg-white dark:bg-secondary-800 text-secondary-900 dark:text-white"
                       >
                         <option value="">All Priorities</option>
-                        {uniquePriorities.map((priority) => (
-                          <option key={priority} value={priority}>
-                            {priority}
-                          </option>
-                        ))}
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
                       </select>
                     </div>
 
@@ -550,7 +511,7 @@ const AdminTasks = () => {
                       <select
                         value={filters.dueDate}
                         onChange={(e) =>
-                          setFilters({ ...filters, dueDate: e.target.value })
+                          handleFilterChange("dueDate", e.target.value)
                         }
                         className="w-full rounded-lg border border-secondary-200 dark:border-secondary-700 py-2 px-3 bg-white dark:bg-secondary-800 text-secondary-900 dark:text-white"
                       >
@@ -561,16 +522,12 @@ const AdminTasks = () => {
                       </select>
                     </div>
 
-                    {Object.values(filters).some(Boolean) && (
+                    {(filters.status !== "" ||
+                      filters.priority !== "" ||
+                      filters.dueDate !== "" ||
+                      searchTerm !== "") && (
                       <button
-                        onClick={() =>
-                          setFilters({
-                            status: "",
-                            priority: "",
-                            assignee: "",
-                            dueDate: "",
-                          })
-                        }
+                        onClick={clearFilters}
                         className="w-full mt-2 px-4 py-2 text-sm text-danger-600 bg-danger-50 dark:bg-danger-900/20 hover:bg-danger-100 dark:hover:bg-danger-800/30 rounded-lg"
                       >
                         Clear all filters
@@ -602,7 +559,7 @@ const AdminTasks = () => {
                 Loading tasks...
               </p>
             </div>
-          ) : sortedAndFilteredTasks.length > 0 ? (
+          ) : sortedTasks.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-secondary-200 dark:divide-secondary-700">
                 <thead className="bg-secondary-50 dark:bg-secondary-700/30">
@@ -631,7 +588,7 @@ const AdminTasks = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-secondary-800 divide-y divide-secondary-200 dark:divide-secondary-700">
-                  {sortedAndFilteredTasks.map((task) => (
+                  {sortedTasks.map((task) => (
                     <tr
                       key={task._id}
                       className={`group hover:bg-secondary-50 dark:hover:bg-secondary-700/30 transition-colors duration-200 ${
@@ -749,7 +706,7 @@ const AdminTasks = () => {
 
                       {/* Actions */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-500 dark:text-secondary-400">
-                        <div className="flex items-center space-x-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        <div className="flex items-center space-x-3">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -762,7 +719,7 @@ const AdminTasks = () => {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDeleteTask(task._id);
+                              handleDeleteConfirmation(task._id);
                             }}
                             className="text-danger-500 dark:text-danger-400 hover:text-danger-700 dark:hover:text-danger-300"
                             disabled={isDeleting && deleteTaskId === task._id}
@@ -818,109 +775,6 @@ const AdminTasks = () => {
                   ))}
                 </tbody>
               </table>
-
-              {/* Pagination */}
-              <div className="flex items-center justify-between border-t border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-800 px-4 py-3 sm:px-6">
-                <div className="flex flex-1 justify-between sm:hidden">
-                  <button
-                    onClick={() =>
-                      handlePageChange(Math.max(1, currentPage - 1))
-                    }
-                    disabled={currentPage === 1}
-                    className={`relative inline-flex items-center rounded-md border border-secondary-300 dark:border-secondary-700 bg-white dark:bg-secondary-800 px-4 py-2 text-sm font-medium ${
-                      currentPage === 1
-                        ? "text-secondary-400 dark:text-secondary-500 cursor-not-allowed"
-                        : "text-primary-700 dark:text-primary-400 hover:bg-secondary-50 dark:hover:bg-secondary-700/30"
-                    }`}
-                  >
-                    Previous
-                  </button>
-                  <button
-                    onClick={() =>
-                      handlePageChange(
-                        Math.min(pagination.totalPages, currentPage + 1)
-                      )
-                    }
-                    disabled={currentPage === pagination.totalPages}
-                    className={`relative ml-3 inline-flex items-center rounded-md border border-secondary-300 dark:border-secondary-700 bg-white dark:bg-secondary-800 px-4 py-2 text-sm font-medium ${
-                      currentPage === pagination.totalPages
-                        ? "text-secondary-400 dark:text-secondary-500 cursor-not-allowed"
-                        : "text-primary-700 dark:text-primary-400 hover:bg-secondary-50 dark:hover:bg-secondary-700/30"
-                    }`}
-                  >
-                    Next
-                  </button>
-                </div>
-                <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm text-secondary-700 dark:text-secondary-400">
-                      Showing{" "}
-                      <span className="font-medium">
-                        {tasks.length
-                          ? (currentPage - 1) * TASKS_PER_PAGE + 1
-                          : 0}
-                      </span>{" "}
-                      to{" "}
-                      <span className="font-medium">
-                        {Math.min(
-                          currentPage * TASKS_PER_PAGE,
-                          pagination.totalTasks
-                        )}
-                      </span>{" "}
-                      of{" "}
-                      <span className="font-medium">
-                        {pagination.totalTasks}
-                      </span>{" "}
-                      tasks
-                    </p>
-                  </div>
-                  <div>
-                    <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm">
-                      <button
-                        onClick={() =>
-                          handlePageChange(Math.max(1, currentPage - 1))
-                        }
-                        disabled={currentPage === 1}
-                        className={`relative inline-flex items-center rounded-l-md px-2 py-2 ${
-                          currentPage === 1
-                            ? "text-secondary-400 dark:text-secondary-500 cursor-not-allowed"
-                            : "text-secondary-500 dark:text-secondary-400 hover:bg-secondary-50 dark:hover:bg-secondary-700/30"
-                        }`}
-                      >
-                        <FaChevronLeft className="h-4 w-4" />
-                      </button>
-                      {[...Array(pagination.totalPages).keys()].map((page) => (
-                        <button
-                          key={page + 1}
-                          onClick={() => handlePageChange(page + 1)}
-                          className={`relative inline-flex items-center px-4 py-2 text-sm font-medium border ${
-                            currentPage === page + 1
-                              ? "z-10 bg-primary-50 dark:bg-primary-900/20 border-primary-500 text-primary-600 dark:text-primary-400"
-                              : "bg-white dark:bg-secondary-800 border-secondary-300 dark:border-secondary-700 text-secondary-500 dark:text-secondary-400 hover:bg-secondary-50 dark:hover:bg-secondary-700/30"
-                          }`}
-                        >
-                          {page + 1}
-                        </button>
-                      ))}
-                      <button
-                        onClick={() =>
-                          handlePageChange(
-                            Math.min(pagination.totalPages, currentPage + 1)
-                          )
-                        }
-                        disabled={currentPage === pagination.totalPages}
-                        className={`relative inline-flex items-center rounded-r-md px-2 py-2 ${
-                          currentPage === pagination.totalPages
-                            ? "text-secondary-400 dark:text-secondary-500 cursor-not-allowed"
-                            : "text-secondary-500 dark:text-secondary-400 hover:bg-secondary-50 dark:hover:bg-secondary-700/30"
-                        }`}
-                      >
-                        <FaChevronRight className="h-4 w-4" />
-                      </button>
-                    </nav>
-                  </div>
-                </div>
-              </div>
             </div>
           ) : (
             <div className="text-center py-12">
@@ -928,14 +782,7 @@ const AdminTasks = () => {
                 No tasks match the selected filters.
               </p>
               <button
-                onClick={() =>
-                  setFilters({
-                    status: "",
-                    priority: "",
-                    assignee: "",
-                    dueDate: "",
-                  })
-                }
+                onClick={clearFilters}
                 className="mt-2 text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
               >
                 Clear all filters
@@ -971,6 +818,32 @@ const AdminTasks = () => {
             />
           </div>
         </div>
+      )}
+
+      {/* Add Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteTask}
+        title="Delete Task"
+        message="Are you sure you want to delete this task? This action is permanent and cannot be undone."
+        confirmText={
+          isDeleting && deleteTaskId === taskToDelete ? (
+            <FaSpinner className="animate-spin mx-auto" />
+          ) : (
+            "Delete Task"
+          )
+        }
+        variant="danger"
+      />
+
+      {/* Render Pagination component outside the container div */}
+      {pagination.totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={pagination.totalPages}
+          onPageChange={handlePageChange}
+        />
       )}
     </div>
   );
