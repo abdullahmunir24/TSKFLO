@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { FaExclamationCircle, FaTimes, FaCopy, FaChevronLeft, FaChevronRight } from "react-icons/fa";
-import { showSuccessToast, showErrorToast } from "../../utils/toastUtils";
+import { showSuccessToast, showErrorToast, showWarningToast } from "../../utils/toastUtils";
 import {
   useGetAdminUsersQuery,
   useInviteUserMutation,
@@ -77,8 +77,14 @@ const AdminUsers = () => {
         setShowCreateUser(false);
       } else {
         const response = await inviteUser(newUser).unwrap();
-        setInvitationLink(response.link);
-        showSuccessToast("Invitation sent successfully");
+        
+        // Handle already invited case
+        if (response?.alreadyInvited) {
+          showWarningToast(response.message || "User has already been invited");
+        } else {
+          setInvitationLink(response.link);
+          showSuccessToast("Invitation sent successfully");
+        }
       }
       setEditingUser(null);
       setNewUser({ name: "", email: "", role: "user" });

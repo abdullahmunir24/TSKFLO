@@ -167,6 +167,24 @@ export const adminApiSlice = createApi({
         body: userData,
         credentials: "include",
       }),
+      transformResponse: (response, meta) => {
+        // For 204 status (No Content) which means user already invited
+        if (meta?.response?.status === 204) {
+          return { 
+            alreadyInvited: true, 
+            message: "User has already been invited" 
+          };
+        }
+        return response;
+      },
+      transformErrorResponse: (response) => {
+        // Handle specific error cases
+        if (response.status === 400) {
+          // User already exists or other validation error
+          return { message: response.data?.message || "Invalid user data" };
+        }
+        return response;
+      },
       invalidatesTags: ["AdminUsers"],
     }),
     createAdminTask: builder.mutation({
