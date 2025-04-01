@@ -313,6 +313,24 @@ export const adminApiSlice = createApi({
       }),
       invalidatesTags: ["AdminTasks", "Metrics"],
     }),
+    addAdminAssignee: builder.mutation({
+      query: ({ taskId, assigneeId }) => ({
+        url: `/tasks/${taskId}/assignees`,
+        method: "PATCH",
+        body: { assigneeId },
+        credentials: "include",
+      }),
+      invalidatesTags: ["AdminTasks"],
+    }),
+    removeAdminAssignee: builder.mutation({
+      query: ({ taskId, assigneeId }) => ({
+        url: `/tasks/${taskId}/assignees`,
+        method: "DELETE",
+        body: { assigneeId },
+        credentials: "include",
+      }),
+      invalidatesTags: ["AdminTasks"],
+    }),
     getMetrics: builder.query({
       query: (text) => ({
         url: `/metrics`,
@@ -335,5 +353,7 @@ export const {
   useInviteUserMutation,
   useLockAdminTaskMutation,
   useCreateAdminTaskMutation,
+  useAddAdminAssigneeMutation,
+  useRemoveAdminAssigneeMutation,
   useGetMetricsQuery,
 } = adminApiSlice;
