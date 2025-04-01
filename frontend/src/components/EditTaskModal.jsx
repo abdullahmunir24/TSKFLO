@@ -16,7 +16,10 @@ import {
 } from "../features/tasks/taskApiSlice";
 import { useSearchUsersQuery } from "../features/user/userApiSlice";
 import { useSelector } from "react-redux";
-import { selectCurrentUserId } from "../features/auth/authSlice";
+import { 
+  selectCurrentUserId,
+  selectCurrentUserRole 
+} from "../features/auth/authSlice";
 import { 
   validateTaskForm, 
   MAX_DESCRIPTION_LENGTH,
@@ -26,7 +29,10 @@ import Modal from "./Modal";
 
 const EditTaskModal = ({ task, isOpen, onClose, onSuccess }) => {
   const userId = useSelector(selectCurrentUserId);
+  const userRole = useSelector(selectCurrentUserRole);
   const isOwner = task?.owner?._id === userId;
+  const isAdmin = userRole === "admin";
+  const canEditAssignees = isOwner || isAdmin;
 
   const [errorMessage, setErrorMessage] = useState("");
   const [notification, setNotification] = useState(null);
@@ -122,7 +128,7 @@ const EditTaskModal = ({ task, isOpen, onClose, onSuccess }) => {
   // Function to handle removing assignees
   const handleRemoveAssignee = useCallback(
     async (assigneeId) => {
-      if (!isOwner) return;
+      if (!canEditAssignees) return;
 
       try {
         await removeAssignee({
@@ -147,13 +153,13 @@ const EditTaskModal = ({ task, isOpen, onClose, onSuccess }) => {
         setTimeout(() => setErrorMessage(null), 3000);
       }
     },
-    [isOwner, removeAssignee, task?._id]
+    [canEditAssignees, removeAssignee, task?._id]
   );
 
   // Function to handle adding assignees
   const handleAddAssignee = useCallback(
     async (user) => {
-      if (!isOwner) return;
+      if (!canEditAssignees) return;
 
       // Check if already assigned
       if (selectedAssignees.some((a) => a._id === user._id)) {
@@ -187,7 +193,7 @@ const EditTaskModal = ({ task, isOpen, onClose, onSuccess }) => {
         setTimeout(() => setErrorMessage(null), 3000);
       }
     },
-    [isOwner, addAssignee, task?._id, selectedAssignees]
+    [canEditAssignees, addAssignee, task?._id, selectedAssignees]
   );
 
   const handleSubmit = async (e) => {
@@ -488,7 +494,7 @@ const EditTaskModal = ({ task, isOpen, onClose, onSuccess }) => {
                 >
                   <FaUser className="text-xs" />
                   <span>{assignee.name}</span>
-                  {isOwner && (
+                  {canEditAssignees && (
                     <button
                       type="button"
                       onClick={() => handleRemoveAssignee(assignee._id)}
@@ -507,8 +513,8 @@ const EditTaskModal = ({ task, isOpen, onClose, onSuccess }) => {
             </p>
           )}
 
-          {/* Search users input for owners only */}
-          {isOwner && (
+          {/* Search users input for owners and admins */}
+          {canEditAssignees && (
             <div className="mt-2">
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -596,11 +602,11 @@ const EditTaskModal = ({ task, isOpen, onClose, onSuccess }) => {
             </div>
           )}
 
-          {/* Note for non-owners */}
-          {!isOwner && (
+          {/* Note for non-owners and non-admins */}
+          {!canEditAssignees && (
             <div className="mt-2 p-2.5 bg-secondary-50 dark:bg-secondary-800/50 border border-secondary-200 dark:border-secondary-700 rounded-lg">
               <p className="text-xs text-secondary-600 dark:text-secondary-400 italic">
-                Note: Only task owners can edit assignees and delete tasks.
+                Note: Only task owners and admins can edit assignees.
                 This task is owned by {task.owner?.name || "another user"}.
               </p>
             </div>
