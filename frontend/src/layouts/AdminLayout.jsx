@@ -6,12 +6,13 @@ const AdminLayout = () => {
   // Get current location to determine if we're on the messaging page
   const location = useLocation();
   const isMessagingPage = location.pathname.includes("/admin/messaging");
+  const isDashboard = location.pathname.includes("/admin/dashboard");
   const isCreateTaskPage = location.pathname.includes("/admin/createTask");
 
   return (
     <div className="min-h-screen bg-secondary-50 dark:bg-secondary-900">
       <AdminNavbar />
-      {isMessagingPage || isCreateTaskPage ? (
+      {isMessagingPage || isCreateTaskPage || isDashboard ? (
         // No padding or max-width on these pages
         <Outlet />
       ) : (
