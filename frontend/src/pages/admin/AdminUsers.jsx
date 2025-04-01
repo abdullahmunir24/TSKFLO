@@ -111,11 +111,23 @@ const AdminUsers = () => {
 
     setIsDeleting(true);
     try {
-      await deleteUser(userToDelete).unwrap();
-      showSuccessToast("User deleted successfully");
+      console.log("Deleting user with ID:", userToDelete);
+      const result = await deleteUser(userToDelete).unwrap();
+      console.log("Delete user response:", result);
+      
+      // Always show success toast on successful deletion
+      showSuccessToast(result?.message || "User deleted successfully");
       refetch();
     } catch (err) {
-      showErrorToast(err.data?.message || "Failed to delete user");
+      console.error("Error deleting user:", err);
+      
+      // Special case: If it's a parsing error but status is 200, it was actually successful
+      if (err?.status === 'PARSING_ERROR' && err?.originalStatus === 200) {
+        showSuccessToast("User deleted successfully");
+        refetch();
+      } else {
+        showErrorToast(err?.data?.message || "Failed to delete user");
+      }
     } finally {
       setIsDeleting(false);
       setShowDeleteModal(false);
