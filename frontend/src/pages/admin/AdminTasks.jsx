@@ -338,7 +338,20 @@ const AdminTasks = () => {
     setShowDeleteModal(false);
 
     try {
-      await deleteTask(taskToDelete).unwrap();
+      console.log("Deleting task with ID:", taskToDelete);
+      const result = await deleteTask(taskToDelete).unwrap();
+      console.log("Delete task response:", result);
+      
+      // Show success toast
+      toast.success(result?.message || "Task deleted successfully", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      
       setDeleteSuccess(true);
       setTimeout(() => {
         setDeleteSuccess(false);
@@ -354,6 +367,17 @@ const AdminTasks = () => {
     } catch (err) {
       console.error("Error deleting task:", err);
       setDeleteError(err.data?.message || "Failed to delete task");
+      
+      // Show error toast
+      toast.error(err.data?.message || "Failed to delete task", {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      
       setTimeout(() => {
         setDeleteError(null);
         setDeleteTaskId(null);

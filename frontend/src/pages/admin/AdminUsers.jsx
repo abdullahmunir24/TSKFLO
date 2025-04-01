@@ -1,20 +1,23 @@
 import React, { useState, useMemo, useEffect, useCallback } from "react";
-import {
-  FaExclamationCircle,
-  FaTimes,
-  FaCopy,
-  FaSearch,
-  FaFilter,
-  FaChevronDown,
-  FaChevronUp,
-  FaPlus,
-  FaEdit,
-  FaTrash,
-  FaSpinner,
+import { 
+  FaExclamationCircle, 
+  FaTimes, 
+  FaCopy, 
+  FaChevronLeft, 
+  FaChevronRight, 
+  FaSearch, 
+  FaFilter, 
+  FaChevronDown, 
+  FaChevronUp, 
+  FaPlus, 
+  FaEdit, 
+  FaTrash, 
+  FaSpinner 
 } from "react-icons/fa";
-import { showSuccessToast, showErrorToast } from "../../utils/toastUtils";
+import { showSuccessToast, showErrorToast, showWarningToast } from "../../utils/toastUtils";
 import Pagination from "../../components/Pagination";
 import ConfirmationModal from "../../components/ConfirmationModal";
+
 import {
   useGetAdminUsersQuery,
   useInviteUserMutation,
@@ -108,11 +111,23 @@ const AdminUsers = () => {
 
     setIsDeleting(true);
     try {
-      await deleteUser(userToDelete).unwrap();
-      showSuccessToast("User deleted successfully");
+      console.log("Deleting user with ID:", userToDelete);
+      const result = await deleteUser(userToDelete).unwrap();
+      console.log("Delete user response:", result);
+      
+      // Always show success toast on successful deletion
+      showSuccessToast(result?.message || "User deleted successfully");
       refetch();
     } catch (err) {
-      showErrorToast(err.data?.message || "Failed to delete user");
+      console.error("Error deleting user:", err);
+      
+      // Special case: If it's a parsing error but status is 200, it was actually successful
+      if (err?.status === 'PARSING_ERROR' && err?.originalStatus === 200) {
+        showSuccessToast("User deleted successfully");
+        refetch();
+      } else {
+        showErrorToast(err?.data?.message || "Failed to delete user");
+      }
     } finally {
       setIsDeleting(false);
       setShowDeleteModal(false);
@@ -129,8 +144,14 @@ const AdminUsers = () => {
         setShowCreateUser(false);
       } else {
         const response = await inviteUser(newUser).unwrap();
-        setInvitationLink(response.link);
-        showSuccessToast("Invitation sent successfully");
+        
+        // Handle already invited case
+        if (response?.alreadyInvited) {
+          showWarningToast(response.message || "User has already been invited");
+        } else {
+          setInvitationLink(response.link);
+          showSuccessToast("Invitation sent successfully");
+        }
       }
       setEditingUser(null);
       setNewUser({ name: "", email: "", role: "user" });

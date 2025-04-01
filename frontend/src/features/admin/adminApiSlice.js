@@ -1,18 +1,35 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
+const baseQuery = fetchBaseQuery({
+  baseUrl: "http://localhost:3200/admin",
+  prepareHeaders: (headers, { getState }) => {
+    const token = getState().auth.token;
+    if (token) {
+      headers.set("authorization", `Bearer ${token}`);
+    }
+    return headers;
+  },
+});
+
+// Custom error handling wrapper for baseQuery
+const baseQueryWithErrorHandling = async (args, api, extraOptions) => {
+  console.log("Making request:", args);
+  const result = await baseQuery(args, api, extraOptions);
+  console.log("Response received:", result);
+  
+  // If successful, return the result
+  if (!result.error) {
+    return result;
+  }
+  
+  // Handle server errors
+  console.error("API Error:", result.error);
+  return result;
+};
+
 export const adminApiSlice = createApi({
   reducerPath: "adminApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: "http://localhost:3200/admin",
-    prepareHeaders: (headers, { getState }) => {
-      const token = getState().auth.token;
-      if (token) {
-        headers.set("authorization", `Bearer ${token}`);
-      }
-      console.log("Request Headers:", Object.fromEntries(headers.entries()));
-      return headers;
-    },
-  }),
+  baseQuery: baseQueryWithErrorHandling,
   tagTypes: ["AdminTasks", "AdminUsers", "Metrics"],
   endpoints: (builder) => ({
     getAdminTasks: builder.query({
@@ -177,6 +194,21 @@ export const adminApiSlice = createApi({
         url: `/tasks/${taskId}`,
         method: "DELETE",
         credentials: "include",
+        responseHandler: (response) => {
+          // For this specific endpoint, handle plain text "OK" response
+          if (response.status === 200) {
+            // Check if the response is text or already JSON
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+              return response.json();
+            } else {
+              // For non-JSON responses (like plain "OK"), return a success object
+              return { success: true, message: "Task deleted successfully" };
+            }
+          }
+          // For other status codes, attempt to parse as JSON
+          return response.json();
+        },
       }),
       invalidatesTags: ["AdminTasks", "Metrics"],
     }),
@@ -203,6 +235,21 @@ export const adminApiSlice = createApi({
         url: `/users/${userId}`,
         method: "DELETE",
         credentials: "include",
+        responseHandler: (response) => {
+          // For this specific endpoint, handle plain text "OK" response
+          if (response.status === 200) {
+            // Check if the response is text or already JSON
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+              return response.json();
+            } else {
+              // For non-JSON responses (like plain "OK"), return a success object
+              return { success: true, message: "User deleted successfully" };
+            }
+          }
+          // For other status codes, attempt to parse as JSON
+          return response.json();
+        },
       }),
       invalidatesTags: ["AdminUsers", "Metrics"],
     }),
@@ -213,6 +260,24 @@ export const adminApiSlice = createApi({
         body: userData,
         credentials: "include",
       }),
+      transformResponse: (response, meta) => {
+        // For 204 status (No Content) which means user already invited
+        if (meta?.response?.status === 204) {
+          return { 
+            alreadyInvited: true, 
+            message: "User has already been invited" 
+          };
+        }
+        return response;
+      },
+      transformErrorResponse: (response) => {
+        // Handle specific error cases
+        if (response.status === 400) {
+          // User already exists or other validation error
+          return { message: response.data?.message || "Invalid user data" };
+        }
+        return response;
+      },
       invalidatesTags: ["AdminUsers"],
     }),
     createAdminTask: builder.mutation({
