@@ -38,7 +38,7 @@ const DarkModeToggle = () => {
       {darkMode ? (
         <FaSun className="h-5 w-5 text-warning-400" />
       ) : (
-        <FaMoon className="h-5 w-5" />
+        <FaMoon className="h-5 w-5 text-purple-500" />
       )}
     </button>
   );

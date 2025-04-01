@@ -568,8 +568,8 @@ const AdminMetrics = () => {
                         key={user.userId}
                         className={
                           index % 2 === 0
-                            ? "bg-white dark:bg-secondary-800"
-                            : "bg-secondary-50 dark:bg-secondary-750"
+                            ? "bg-white dark:bg-secondary-900"
+                            : "bg-secondary-50 dark:bg-secondary-800"
                         }
                       >
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-secondary-900 dark:text-white">

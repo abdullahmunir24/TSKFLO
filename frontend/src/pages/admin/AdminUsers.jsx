@@ -484,8 +484,7 @@ const AdminUsers = () => {
                       {invitationLink}
                     </div>
                     <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                      Share this link with the user. The link will expire after
-                      they register.
+                      The user has already been emailed with an invitation. You can also share this link manually if needed. This system is purely for development.
                     </p>
                   </div>
                 )}
