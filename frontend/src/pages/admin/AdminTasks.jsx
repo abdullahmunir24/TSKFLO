@@ -646,7 +646,7 @@ const AdminTasks = () => {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <div className="flex flex-col">
             <h2 className="text-xl font-bold text-secondary-900 dark:text-white">
-              Task Management
+              TSKFLO
             </h2>
             <p className="text-sm text-secondary-500 dark:text-secondary-400 mt-1">
               Manage and monitor all tasks in the system

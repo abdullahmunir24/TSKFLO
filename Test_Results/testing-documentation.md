@@ -1,6 +1,6 @@
-# Task Management Application Testing Documentation
+# TSKFLO Testing Documentation
 
-This document provides an overview of the testing infrastructure for both the backend and frontend components of the Task Management application.
+This document provides an overview of the testing infrastructure for both the backend and frontend components of the TSKFLO application.
 
 ## Backend Testing
 

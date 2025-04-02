@@ -47,7 +47,7 @@ const HomePage = () => {
           >
             <h1 className="text-4xl md:text-6xl font-bold leading-tight">
               Revolutionize Your{" "}
-              <span className="text-primary-300">Task Management</span>{" "}
+              <span className="text-primary-300">TSKFLO</span>{" "}
               Experience
             </h1>
             <p className="text-xl text-gray-200 leading-relaxed">
@@ -178,7 +178,7 @@ const HomePage = () => {
         {/* Footer */}
         <footer className="mt-auto pt-12 text-center text-sm text-gray-300">
           <p>
-            © {new Date().getFullYear()} Task Management Platform. All rights
+            © {new Date().getFullYear()} TSKFLO. All rights
             reserved.
           </p>
         </footer>

@@ -72,10 +72,10 @@ const UserMenu = ({ userName, userData, isUserLoading }) => {
       {/* Logout button */}
       <button
         onClick={handleLogout}
-        className="hidden md:flex items-center gap-1.5 text-sm font-medium text-secondary-700 dark:text-secondary-300 hover:text-danger-600 dark:hover:text-danger-400 transition-colors py-2 px-3 rounded-lg hover:bg-secondary-50 dark:hover:bg-secondary-800"
+        className="hidden md:flex items-center gap-1.5 text-sm font-medium text-secondary-700 dark:text-secondary-300 hover:text-danger-600 dark:hover:text-danger-400 transition-colors py-2 px-3 rounded-lg hover:bg-secondary-50 dark:hover:bg-secondary-800 group"
         disabled={isLogoutLoading}
       >
-        <FaSignOutAlt className="h-4 w-4" />
+        <FaSignOutAlt className="h-4 w-4 text-secondary-700 dark:text-secondary-300 group-hover:text-danger-600 dark:group-hover:text-danger-400" />
         <span>Logout</span>
       </button>
     </div>

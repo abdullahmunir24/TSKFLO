@@ -127,7 +127,7 @@ const RegisterPage = () => {
               <FaTasks className="text-white text-3xl" />
             </div>
             <h1 className="text-4xl font-bold text-white mb-2">
-              Task Management
+              TSKFLO
             </h1>
             <p className="text-white/80">Complete your registration</p>
           </div>
@@ -249,7 +249,7 @@ const RegisterPage = () => {
           {/* Footer */}
           <div className="mt-8 text-center">
             <p className="text-white/60 text-sm">
-              &copy; {new Date().getFullYear()} Task Management. All rights
+              &copy; {new Date().getFullYear()} TSKFLO. All rights
               reserved.
             </p>
           </div>
