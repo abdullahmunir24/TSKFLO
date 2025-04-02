@@ -1,4 +1,4 @@
-# Task Management System
+# TSKFLO
 
 ## Overview
 
@@ -6,7 +6,7 @@ A comprehensive task management system designed for team collaboration, with rol
 
 ## Screenshots
 
-Below are screenshots showcasing key features of the Task Management System:
+Below are screenshots showcasing key features of TSKFLO:
 
 ### Homepage
 ![Homepage View](assets/images/homepage.png)
@@ -138,7 +138,7 @@ docker-compose down
 
 ## API Documentation
 
-The Task Management System provides a comprehensive REST API with the following key features:
+TSKFLO provides a comprehensive REST API with the following key features:
 
 - JWT-based authentication
 - User management endpoints
@@ -169,7 +169,7 @@ For detailed API documentation including all endpoints, request/response formats
 ## Project Structure
 
 ```
-task-management/
+tskflo/
 ├── backend/
 │   ├── controllers/    # Business logic
 │   ├── models/         # Database schemas
