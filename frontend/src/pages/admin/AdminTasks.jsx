@@ -61,9 +61,11 @@ const EditTaskForm = ({ task, onClose }) => {
   );
   const [priority, setPriority] = useState(task.priority || "medium");
   const [status, setStatus] = useState(task.status || "Incomplete");
-  
+
   // Add state for assignees
-  const [selectedAssignees, setSelectedAssignees] = useState(task.assignees || []);
+  const [selectedAssignees, setSelectedAssignees] = useState(
+    task.assignees || []
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
@@ -109,7 +111,9 @@ const EditTaskForm = ({ task, onClose }) => {
       setShowDropdown(false);
     } catch (err) {
       console.error("Failed to add assignee:", err);
-      setError(err?.data?.message || "Failed to add assignee. Please try again.");
+      setError(
+        err?.data?.message || "Failed to add assignee. Please try again."
+      );
       setTimeout(() => setError(null), 3000);
     }
   };
@@ -122,10 +126,12 @@ const EditTaskForm = ({ task, onClose }) => {
       }).unwrap();
 
       // Update local state
-      setSelectedAssignees(prev => prev.filter(a => a._id !== assigneeId));
+      setSelectedAssignees((prev) => prev.filter((a) => a._id !== assigneeId));
     } catch (err) {
       console.error("Failed to remove assignee:", err);
-      setError(err?.data?.message || "Failed to remove assignee. Please try again.");
+      setError(
+        err?.data?.message || "Failed to remove assignee. Please try again."
+      );
       setTimeout(() => setError(null), 3000);
     }
   };
@@ -253,7 +259,7 @@ const EditTaskForm = ({ task, onClose }) => {
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Assignees
           </label>
-          
+
           {/* Current assignees */}
           {selectedAssignees && selectedAssignees.length > 0 ? (
             <div className="flex flex-wrap gap-2 mb-3">
@@ -301,62 +307,57 @@ const EditTaskForm = ({ task, onClose }) => {
                 className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white"
               />
               {/* Search results dropdown */}
-              {showDropdown &&
-                debouncedQuery &&
-                debouncedQuery.length >= 2 && (
-                  <div className="absolute z-50 w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 max-h-60 overflow-y-auto top-full left-0 mt-1">
-                    {isSearching ? (
-                      <div className="p-3 text-center text-gray-600 dark:text-gray-400">
-                        <FaSpinner className="animate-spin inline mr-2" />
-                        Searching users...
-                      </div>
-                    ) : searchResults.users &&
-                      searchResults.users.length > 0 ? (
-                      <ul className="py-1">
-                        {searchResults.users
-                          .filter(
-                            (user) =>
-                              !selectedAssignees.some(
-                                (a) => a._id === user._id
-                              )
-                          )
-                          .map((user) => (
-                            <li
-                              key={user._id}
-                              className="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer flex items-center justify-between"
-                              onClick={() => handleAddAssignee(user)}
-                            >
-                              <div className="flex items-center">
-                                <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-700 dark:text-primary-300 mr-3">
-                                  {user.name
-                                    ? user.name.charAt(0).toUpperCase()
-                                    : "U"}
+              {showDropdown && debouncedQuery && debouncedQuery.length >= 2 && (
+                <div className="absolute z-50 w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 max-h-60 overflow-y-auto top-full left-0 mt-1">
+                  {isSearching ? (
+                    <div className="p-3 text-center text-gray-600 dark:text-gray-400">
+                      <FaSpinner className="animate-spin inline mr-2" />
+                      Searching users...
+                    </div>
+                  ) : searchResults.users && searchResults.users.length > 0 ? (
+                    <ul className="py-1">
+                      {searchResults.users
+                        .filter(
+                          (user) =>
+                            !selectedAssignees.some((a) => a._id === user._id)
+                        )
+                        .map((user) => (
+                          <li
+                            key={user._id}
+                            className="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer flex items-center justify-between"
+                            onClick={() => handleAddAssignee(user)}
+                          >
+                            <div className="flex items-center">
+                              <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-700 dark:text-primary-300 mr-3">
+                                {user.name
+                                  ? user.name.charAt(0).toUpperCase()
+                                  : "U"}
+                              </div>
+                              <div>
+                                <div className="font-medium text-gray-900 dark:text-white">
+                                  {user.name || "User"}
                                 </div>
-                                <div>
-                                  <div className="font-medium text-gray-900 dark:text-white">
-                                    {user.name || "User"}
-                                  </div>
-                                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                                    {user.email || ""}
-                                  </div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                  {user.email || ""}
                                 </div>
                               </div>
-                              <button
-                                type="button"
-                                className="ml-2 p-1.5 rounded-full bg-primary-50 hover:bg-primary-100 dark:bg-primary-900/30 dark:hover:bg-primary-800/50 text-primary-600 dark:text-primary-400"
-                              >
-                                <FaPlus size={10} />
-                              </button>
-                            </li>
-                          ))}
-                      </ul>
-                    ) : (
-                      <div className="p-3 text-center text-gray-600 dark:text-gray-400">
-                        No users found
-                      </div>
-                    )}
-                  </div>
-                )}
+                            </div>
+                            <button
+                              type="button"
+                              className="ml-2 p-1.5 rounded-full bg-primary-50 hover:bg-primary-100 dark:bg-primary-900/30 dark:hover:bg-primary-800/50 text-primary-600 dark:text-primary-400"
+                            >
+                              <FaPlus size={10} />
+                            </button>
+                          </li>
+                        ))}
+                    </ul>
+                  ) : (
+                    <div className="p-3 text-center text-gray-600 dark:text-gray-400">
+                      No users found
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
               Type at least 2 characters to search for users
@@ -533,7 +534,7 @@ const AdminTasks = () => {
       console.log("Deleting task with ID:", taskToDelete);
       const result = await deleteTask(taskToDelete).unwrap();
       console.log("Delete task response:", result);
-      
+
       // Show success toast
       toast.success(result?.message || "Task deleted successfully", {
         position: "top-right",
@@ -543,7 +544,7 @@ const AdminTasks = () => {
         pauseOnHover: true,
         draggable: true,
       });
-      
+
       setDeleteSuccess(true);
       setTimeout(() => {
         setDeleteSuccess(false);
@@ -559,7 +560,7 @@ const AdminTasks = () => {
     } catch (err) {
       console.error("Error deleting task:", err);
       setDeleteError(err.data?.message || "Failed to delete task");
-      
+
       // Show error toast
       toast.error(err.data?.message || "Failed to delete task", {
         position: "top-right",
@@ -569,7 +570,7 @@ const AdminTasks = () => {
         pauseOnHover: true,
         draggable: true,
       });
-      
+
       setTimeout(() => {
         setDeleteError(null);
         setDeleteTaskId(null);
