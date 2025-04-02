@@ -42,7 +42,7 @@ function sendEmail(
     try {
       let htmlContent = null;
       const tempToSubject = new Map([
-        ["inviteUser", "Invitation to Join Task Management System"],
+        ["inviteUser", "Invitation to Join TSKFLO"],
         ["AssigneeRemoved", "Task Assignment removed"],
         ["AssigneeAdded", "Task Assigned"],
       ]);

@@ -128,7 +128,7 @@ const UserDashNavbar = () => {
             >
               <FaTasks className="h-5 w-5 animate-bounce-light" />
               <span className="bg-gradient-to-r from-primary-600 to-primary-800 dark:from-primary-400 dark:to-primary-600 bg-clip-text text-transparent">
-                Task Management
+                TSKFLO
               </span>
             </Link>
           </div>

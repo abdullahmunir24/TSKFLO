@@ -102,7 +102,7 @@ const LoginPage = () => {
               <FaTasks className="text-white text-3xl" />
             </div>
             <h1 className="text-4xl font-bold text-white mb-2">
-              Task Management
+              TSKFLO
             </h1>
             <p className="text-white/80">Sign in to your account</p>
           </div>
@@ -157,7 +157,7 @@ const LoginPage = () => {
                     onClick={togglePasswordVisibility}
                     className="absolute inset-y-0 right-0 pr-3 flex items-center text-white/70 hover:text-white transition-colors"
                   >
-                    {showPassword ? <FaEyeSlash /> : <FaEye />}
+                    {showPassword ? <FaEyeSlash className="text-secondary-700 dark:text-white/70" /> : <FaEye className="text-secondary-700 dark:text-white/70" />}
                   </button>
                 </div>
                 {errors.password && (
@@ -215,7 +215,7 @@ const LoginPage = () => {
           {/* Footer */}
           <div className="mt-8 text-center">
             <p className="text-white/60 text-sm">
-              &copy; {new Date().getFullYear()} Task Management. All rights
+              &copy; {new Date().getFullYear()} TSKFLO. All rights
               reserved.
             </p>
           </div>
