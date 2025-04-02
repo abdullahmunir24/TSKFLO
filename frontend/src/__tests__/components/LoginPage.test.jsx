@@ -89,7 +89,7 @@ describe("LoginPage Component", () => {
     renderLoginPage();
 
     // Check if key elements are rendered
-    expect(screen.getByText("Task Management")).toBeInTheDocument();
+    expect(screen.getByText("TSKFLO")).toBeInTheDocument();
     expect(screen.getByText("Sign in to your account")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("your@email.com")).toBeInTheDocument(); // Email field updated
     expect(screen.getByPlaceholderText("••••••••")).toBeInTheDocument(); // Password field
