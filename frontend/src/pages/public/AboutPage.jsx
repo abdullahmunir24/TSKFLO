@@ -70,7 +70,6 @@ const AboutPage = () => {
           <div className="flex flex-wrap justify-center gap-2 sm:gap-4 mb-12">
             {[
               { id: "mission", label: "Our Mission", icon: <FaRocket /> },
-              { id: "team", label: "Our Team", icon: <FaUsers /> },
               { id: "technology", label: "Technology", icon: <FaLaptopCode /> },
               { id: "values", label: "Core Values", icon: <FaMedal /> },
             ].map((tab) => (
@@ -150,7 +149,6 @@ const AboutPage = () => {
                     </p>
                     <div className="mt-8 grid grid-cols-3 gap-4 max-w-xs mx-auto">
                       {[
-                        { number: "5", label: "Team Members" },
                         { number: "50+", label: "Tasks Tracked" },
                         { number: "100%", label: "Passion" },
                       ].map((stat, index) => (
@@ -166,98 +164,6 @@ const AboutPage = () => {
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Team Tab */}
-          <div
-            className={`transition-all duration-500 ${
-              activeTab === "team" ? "block opacity-100" : "hidden opacity-0"
-            }`}
-          >
-            <div className="bg-white dark:bg-secondary-800 rounded-2xl shadow-lg overflow-hidden p-8 sm:p-10">
-              <h2 className="text-3xl font-bold mb-10 text-secondary-900 dark:text-white text-center">
-                Meet Our Leadership Team
-              </h2>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-8">
-                {[
-                  {
-                    name: "Khizar Aamir",
-                    role: "CEO & Co-Founder",
-                    bio: "Former project manager who experienced firsthand the challenges of team coordination.",
-                    image: "/images/khizar.JPG",
-                    github: "https://github.com/Khizar2004",
-                  },
-                  {
-                    name: "Haider Ali",
-                    role: "CTO & Co-Founder",
-                    bio: "Software architect with extensive experience building enterprise collaboration tools.",
-                    image: "/images/haider.jpeg",
-                    github: "https://github.com/haiderali077",
-                  },
-                  {
-                    name: "Abdullah Mohsin",
-                    role: "Lead Backend Developer",
-                    bio: "Backend specialist focused on creating intuitive user experiences.",
-                    image: "/images/mohsin.jpeg",
-                    github: "https://github.com/abdullahmoh21",
-                  },
-                  {
-                    name: "Abdur Rehman",
-                    role: "Lead Navbar Expert",
-                    bio: "Experienced developer specializing in creating robust and scalable navigation.",
-                    image: "/images/qazi.jpeg",
-                    github: "https://github.com/abdur026",
-                  },
-                  {
-                    name: "Abdullah Munir",
-                    role: "Lead Frontend Developer",
-                    bio: "Creative designer with a passion for building beautiful and functional interfaces.",
-                    image: "/images/munir.jpeg",
-                    github: "https://github.com/abdullahmunir24",
-                  },
-                ].map((member, index) => (
-                  <div
-                    key={index}
-                    className="flex flex-col items-center text-center"
-                  >
-                    <img
-                      src={member.image}
-                      alt={member.name}
-                      className="w-32 h-32 rounded-full object-cover ring-4 ring-primary-100 dark:ring-primary-900/30 mb-4"
-                    />
-                    <h3 className="text-xl font-semibold text-secondary-900 dark:text-white">
-                      {member.name}
-                    </h3>
-                    <p className="text-primary-600 dark:text-primary-400 mb-2">
-                      {member.role}
-                    </p>
-                    <p className="text-secondary-600 dark:text-secondary-400 text-sm">
-                      {member.bio}
-                    </p>
-                    <div className="flex gap-4 mt-4">
-                      <a
-                        href={member.github}
-                        className="text-secondary-400 hover:text-secondary-600 dark:hover:text-secondary-300 transition-colors"
-                      >
-                        <FaGithub />
-                      </a>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-16 text-center">
-                <h3 className="text-2xl font-semibold mb-6 text-secondary-900 dark:text-white">
-                  Backed by a Team of Experts
-                </h3>
-                <p className="text-secondary-700 dark:text-secondary-300 max-w-2xl mx-auto">
-                  Our full team includes talented engineers, designers, product
-                  managers, and customer success specialists all committed to
-                  making your task management experience exceptional.
-                </p>
               </div>
             </div>
           </div>
@@ -431,9 +337,6 @@ const AboutPage = () => {
                   getting in their way. That's the philosophy that guides us
                   every day."
                 </blockquote>
-                <cite className="block mt-4 text-sm text-secondary-600 dark:text-secondary-400">
-                  — Khizar Aamir, CEO
-                </cite>
               </div>
             </div>
           </div>
